@@ -1,0 +1,708 @@
+# 1. Problema de negócio e setup ----
+
+# AULA: Quem são os nossos clientes? (MAT02053 - UFRGS)
+# Somos a equipe de dados de uma rede de varejo e vamos segmentar os clientes
+# para personalizar as campanhas. Rode o script bloco a bloco (Ctrl + Enter).
+# Este arquivo é gerado a partir de aula_clustering.qmd (veja o HTML com as explicações).
+
+# Criando um objeto chamado "gastos" com quatro valores
+gastos <- c(100, 250, 300, 150)
+
+# Aplicando uma função ao objeto: a média dos gastos
+mean(gastos)
+
+# O mesmo cálculo usando o pipe: "pegue gastos E ENTÃO calcule a média"
+gastos |> mean()
+
+# Pipes podem ser encadeados: média e então arredondamento com 1 casa
+gastos |> mean() |> round(1)
+
+# Lista de pacotes usados na aula
+pacotes <- c("tidyverse",   # manipulação (dplyr), leitura (readr) e gráficos (ggplot2)
+             "cluster")     # pam() (k-medoides), silhouette() e daisy() (Gower)
+
+# Quais ainda não estão instalados?
+faltando <- pacotes[!sapply(pacotes, requireNamespace, quietly = TRUE)]
+
+# Instala só os que faltam (se não faltar nenhum, não faz nada)
+if (length(faltando) > 0) install.packages(faltando)
+
+# Carrega os pacotes
+library(tidyverse)
+library(cluster)
+
+# Conferindo se estamos na pasta certa antes de ler os dados
+if (!file.exists("marketing_campaign.csv")) {
+  stop("Não encontrei o arquivo marketing_campaign.csv. ",
+       "Feche o RStudio e abra o arquivo clustering.Rproj ",
+       "(ou use o menu Session > Set Working Directory > Choose Directory ",
+       "e escolha a pasta clustering).")
+}
+
+# read_tsv() lê arquivos separados por TAB
+clientes_raw <- read_tsv("marketing_campaign.csv")
+
+# Primeira olhada: quantas linhas e colunas, e o tipo de cada coluna
+glimpse(clientes_raw)
+
+# 2. Estatísticas descritivas ----
+
+# Selecionando algumas colunas-chave e pedindo o resumo estatístico de cada uma
+clientes_raw |>
+  select(Year_Birth, Income, Kidhome, Teenhome, Recency, MntWines, NumStorePurchases) |>
+  summary()
+
+# Histograma da renda: cada barra conta quantos clientes caem numa faixa de renda
+clientes_raw |>
+  ggplot(aes(x = Income)) +
+  geom_histogram(bins = 40, fill = "steelblue", color = "white", na.rm = TRUE) +
+  labs(x = "Renda anual (unidades monetárias)", y = "Número de clientes")
+
+# Gasto total = soma das seis colunas de valor gasto (as que começam com "Mnt")
+gasto_total_tmp <- clientes_raw |>
+  mutate(gasto_total = MntWines + MntFruits + MntMeatProducts +
+           MntFishProducts + MntSweetProducts + MntGoldProds)
+
+# Histograma do gasto total
+gasto_total_tmp |>
+  ggplot(aes(x = gasto_total)) +
+  geom_histogram(bins = 40, fill = "darkorange", color = "white") +
+  labs(x = "Gasto total (unidades monetárias)", y = "Número de clientes")
+
+# Comparando mediana e média do gasto total
+gasto_total_tmp |>
+  summarise(mediana = median(gasto_total), media = mean(gasto_total))
+
+# Gasto médio de cada categoria, em formato "longo" (uma linha por cliente e categoria)
+gasto_categoria <- clientes_raw |>
+  select(starts_with("Mnt")) |>                         # só as seis colunas de gasto
+  pivot_longer(everything(),                            # empilha todas as colunas
+               names_to = "categoria", values_to = "gasto") |>
+  group_by(categoria) |>                                # um grupo por categoria
+  summarise(gasto_medio = mean(gasto))                  # média por categoria
+
+# Gráfico de barras, ordenado do menor para o maior gasto médio
+gasto_categoria |>
+  ggplot(aes(x = reorder(categoria, gasto_medio), y = gasto_medio)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +                                        # barras na horizontal
+  labs(x = "Categoria", y = "Gasto médio por cliente (unidades monetárias)")
+
+# A mesma informação em números
+gasto_categoria |> arrange(desc(gasto_medio))
+
+# Média de compras em cada canal (NumDealsPurchases = compras feitas com desconto)
+compras_canal <- clientes_raw |>
+  select(NumStorePurchases, NumWebPurchases, NumCatalogPurchases, NumDealsPurchases) |>
+  pivot_longer(everything(), names_to = "canal", values_to = "compras") |>
+  group_by(canal) |>
+  summarise(compras_medias = mean(compras))
+
+# Gráfico de barras com a média de compras por canal
+compras_canal |>
+  ggplot(aes(x = reorder(canal, compras_medias), y = compras_medias)) +
+  geom_col(fill = "darkgreen") +
+  coord_flip() +
+  labs(x = "Canal", y = "Número médio de compras por cliente")
+
+# A mesma informação em números
+compras_canal |> arrange(desc(compras_medias))
+
+# Total de filhos em casa (crianças + adolescentes)
+filhos_tmp <- clientes_raw |>
+  mutate(filhos = Kidhome + Teenhome)
+
+# Gráfico de barras do número de filhos
+filhos_tmp |>
+  ggplot(aes(x = factor(filhos))) +
+  geom_bar(fill = "purple4") +
+  labs(x = "Filhos em casa", y = "Número de clientes")
+
+# Em números
+filhos_tmp |> count(filhos)
+
+# Gráfico de barras do nível de escolaridade (Education), ordenado pela frequência
+clientes_raw |>
+  ggplot(aes(x = reorder(Education, Education, length))) +
+  geom_bar(fill = "firebrick") +
+  coord_flip() +
+  labs(x = "Escolaridade", y = "Número de clientes")
+
+# Em números
+clientes_raw |> count(Education, sort = TRUE)
+
+# Contagem de clientes por estado civil, do mais ao menos frequente
+clientes_raw |> count(Marital_Status, sort = TRUE)
+
+# 3. Preparação dos dados ----
+
+# Quantos clientes temos antes da limpeza?
+nrow(clientes_raw)
+
+# Passo 1: removendo quem não tem renda informada (NA)
+passo1 <- clientes_raw |>
+  filter(!is.na(Income))
+nrow(passo1)                    # quantos sobraram?
+
+# Passo 2: removendo a renda extrema (acima de 200.000)
+passo2 <- passo1 |>
+  filter(Income <= 200000)
+nrow(passo2)
+
+# Passo 3: removendo anos de nascimento impossíveis (antes de 1920)
+passo3 <- passo2 |>
+  filter(Year_Birth >= 1920)
+nrow(passo3)
+
+# Aplicando todas as regras de limpeza de uma vez, na mesma sequência dos passos acima
+clientes <- clientes_raw |>
+  filter(!is.na(Income),            # passo 1: renda informada
+         Income <= 200000,          # passo 2: sem renda extrema
+         Year_Birth >= 1920) |>     # passo 3: ano de nascimento plausível
+  # Agrupando o estado civil em duas categorias
+  # (x %in% c(...) pergunta "x é um destes valores?" e responde TRUE ou FALSE)
+  mutate(Marital_Status = if_else(Marital_Status %in% c("Married", "Together"),
+                                  "Casado/Junto", "Sozinho")) |>
+  # Removendo as colunas constantes
+  select(-Z_CostContact, -Z_Revenue) |>
+  # Criando as variáveis derivadas
+  mutate(Idade = 2014 - Year_Birth,
+         Filhos = Kidhome + Teenhome,
+         Gasto_total = MntWines + MntFruits + MntMeatProducts +
+           MntFishProducts + MntSweetProducts + MntGoldProds,
+         Compras_total = NumWebPurchases + NumCatalogPurchases + NumStorePurchases,
+         # dmy() transforma o texto "dia-mês-ano" em data; a diferença entre datas é em dias
+         Tempo_casa_dias = as.numeric(as.Date("2014-06-29") - dmy(Dt_Customer)))
+
+# Conferindo: quantos clientes temos agora?
+nrow(clientes)
+
+# Como ficaram o estado civil e as novas variáveis?
+clientes |> count(Marital_Status)
+clientes |>
+  select(Idade, Filhos, Gasto_total, Compras_total, Tempo_casa_dias) |>
+  summary()
+
+# Variáveis que entram no agrupamento (somente comportamento e perfil)
+vars_cluster <- c("Income", "Idade", "Filhos", "Recency",
+                  "MntWines", "MntFruits", "MntMeatProducts",
+                  "MntFishProducts", "MntSweetProducts", "MntGoldProds",
+                  "NumDealsPurchases", "NumWebPurchases", "NumCatalogPurchases",
+                  "NumStorePurchases", "NumWebVisitsMonth")
+
+# Quantas variáveis?
+length(vars_cluster)
+
+# Colocando o gasto original e o gasto em log lado a lado, para comparar
+vinhos <- tibble(`Original` = clientes$MntWines,
+                 `Com log1p` = log1p(clientes$MntWines)) |>
+  pivot_longer(everything(), names_to = "escala", values_to = "valor") |>
+  # fixando a ordem dos painéis: original primeiro
+  mutate(escala = factor(escala, levels = c("Original", "Com log1p")))
+
+# Dois histogramas, um por escala (cada painel tem seu próprio eixo x)
+vinhos |>
+  ggplot(aes(x = valor)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(~ escala, scales = "free_x") +
+  labs(x = "Gasto com vinhos", y = "Número de clientes")
+
+# Média e mediana nas duas escalas
+tibble(escala = c("Original", "Com log1p"),
+       media = c(mean(clientes$MntWines), mean(log1p(clientes$MntWines))),
+       mediana = c(median(clientes$MntWines), median(log1p(clientes$MntWines))))
+
+# Tabela só com as variáveis do agrupamento; log1p() nas seis colunas que começam com "Mnt"
+dados_cluster <- clientes[vars_cluster] |>
+  mutate(across(starts_with("Mnt"), log1p))
+
+# Conferindo: uma linha por cliente, 15 colunas, nenhum NA
+dim(dados_cluster)
+anyNA(dados_cluster)
+
+# Desvio-padrão de cada variável, em ordem decrescente
+sapply(dados_cluster, sd) |>
+  round(2) |>
+  sort(decreasing = TRUE)
+
+# Padronizando: scale() subtrai a média e divide pelo desvio-padrão de cada coluna.
+# Depois disso, cada variável tem média 0 e desvio-padrão 1 (guardamos o resultado em dados_pad)
+dados_pad <- scale(dados_cluster)
+
+# Função que acha os 3 vizinhos mais próximos do cliente 1 em uma matriz de dados
+tres_vizinhos <- function(m) {
+  # Diferença de cada cliente para o cliente 1, variável por variável
+  dif <- sweep(m, 2, m[1, ])
+  # Distância = raiz da soma dos quadrados das diferenças
+  distancia <- sqrt(rowSums(dif^2))
+  # Posições dos 3 mais próximos (a posição 1 é o próprio cliente, com distância 0)
+  viz <- order(distancia)[2:4]
+  # Tabela: quem são, quão longe estão e quanto da distância vem de Income
+  tibble(vizinho = viz,
+         distancia = round(distancia[viz], 2),
+         pct_income = round(100 * dif[viz, "Income"]^2 / rowSums(dif[viz, ]^2), 1)) |>
+    bind_cols(clientes[viz, c("Income", "Idade", "Filhos", "Gasto_total")])
+}
+
+# O cliente 1 (a referência)
+clientes[1, c("Income", "Idade", "Filhos", "Gasto_total")]
+
+# Vizinhos SEM padronizar
+tres_vizinhos(as.matrix(dados_cluster))
+
+# Vizinhos COM padronização
+tres_vizinhos(dados_pad)
+
+# Conferindo: toda coluna deve ter média 0 (arredondada) e desvio-padrão 1
+round(colMeans(dados_pad), 4)
+apply(dados_pad, 2, sd)
+
+# Dimensão final da matriz que usaremos nas próximas seções
+dim(dados_pad)
+
+# 4. Cluster hierárquico ----
+
+# Matriz de distâncias de apenas 3 clientes (as 3 primeiras linhas de dados_pad)
+dist(dados_pad[1:3, ]) |> round(2)
+
+# Conferindo à mão a distância entre o cliente 1 e o cliente 2:
+# diferença em cada variável, ao quadrado, somada, e a raiz
+sqrt(sum((dados_pad[1, ] - dados_pad[2, ])^2)) |> round(2)
+
+# Matriz de distâncias euclidianas entre TODOS os pares de clientes
+dist_euc <- dist(dados_pad)
+
+# Quantas distâncias foram calculadas? (um número para cada par de clientes)
+length(dist_euc)
+
+# Clustering hierárquico com a ligação de Ward, a partir da matriz de distâncias
+hc_ward <- hclust(dist_euc, method = "ward.D2")
+
+# O resultado guarda a sequência de fusões; conferindo o método usado
+hc_ward$method
+
+# Desenhando o dendrograma sem os rótulos dos clientes (labels = FALSE)
+# hang = -1 alinha todos os clientes na base do gráfico
+plot(hc_ward, labels = FALSE, hang = -1,
+     main = "Dendrograma (Ward)", xlab = "Clientes", sub = "",
+     ylab = "Altura da fusão")
+
+# Alturas das 6 últimas fusões, da mais alta (a última, que junta tudo) para a mais baixa
+rev(tail(hc_ward$height, 6)) |> round(1)
+
+# Número de grupos (k): sugerido pelo dendrograma; conferido na seção 5
+k_escolhido <- 3L
+
+# Cortando a árvore em k grupos: um número de grupo (1, 2, 3...) para cada cliente
+grupos_hc <- cutree(hc_ward, k = k_escolhido)
+
+# Quantos clientes em cada grupo?
+table(grupos_hc)
+
+# O mesmo dendrograma, com retângulos marcando os k grupos
+plot(hc_ward, labels = FALSE, hang = -1,
+     main = "Dendrograma (Ward) cortado em 3 grupos", xlab = "Clientes", sub = "",
+     ylab = "Altura da fusão")
+rect.hclust(hc_ward, k = k_escolhido, border = c("firebrick", "steelblue", "darkgreen"))
+
+# 5. K-means ----
+
+# Execução 1: um único sorteio inicial (nstart = 1), com a semente 1
+set.seed(1)
+km_semente1 <- kmeans(dados_pad, centers = k_escolhido, nstart = 1)
+
+# Execução 2: um único sorteio inicial, com a semente 6
+set.seed(6)
+km_semente6 <- kmeans(dados_pad, centers = k_escolhido, nstart = 1)
+
+# WSS total (tot.withinss) de cada execução: quanto menor, melhor
+km_semente1$tot.withinss
+km_semente6$tot.withinss
+
+# Função que roda o k-means para um valor de k e devolve a WSS e a silhueta média
+avaliar_k <- function(k) {
+  set.seed(2026)                                            # sorteio reprodutível
+  km_k <- kmeans(dados_pad, centers = k, nstart = 25)
+  # silhouette() precisa dos grupos e da matriz de distâncias;
+  # a coluna "sil_width" tem a silhueta de cada cliente
+  sil <- silhouette(km_k$cluster, dist_euc)
+  tibble(k = k,
+         wss = km_k$tot.withinss,
+         silhueta_media = mean(sil[, "sil_width"]))
+}
+
+# Aplicando a função para k = 2, 3, ..., 8 (map) e empilhando as linhas numa tabela (list_rbind)
+avaliacao_k <- map(2:8, avaliar_k) |> list_rbind()
+avaliacao_k
+
+# Gráfico do cotovelo: WSS em função de k
+avaliacao_k |>
+  ggplot(aes(x = k, y = wss)) +
+  geom_line(color = "steelblue") +
+  geom_point(size = 3, color = "steelblue") +
+  scale_x_continuous(breaks = 2:8) +
+  labs(x = "Número de grupos (k)", y = "WSS (soma de quadrados dentro dos grupos)")
+
+# Gráfico da silhueta média em função de k
+avaliacao_k |>
+  ggplot(aes(x = k, y = silhueta_media)) +
+  geom_line(color = "darkorange") +
+  geom_point(size = 3, color = "darkorange") +
+  scale_x_continuous(breaks = 2:8) +
+  labs(x = "Número de grupos (k)", y = "Silhueta média")
+
+# K-means final: k_escolhido grupos, 25 sorteios iniciais, semente fixa
+set.seed(2026)
+km <- kmeans(dados_pad, centers = k_escolhido, nstart = 25)
+
+# WSS da solução final (compare com as duas execuções com nstart = 1)
+km$tot.withinss
+
+# Quantas iterações (repetições dos passos 2 e 3) até estabilizar
+km$iter
+
+# Grupo de cada cliente e tamanho de cada grupo
+grupos_km <- km$cluster
+km$size
+
+# 6. K-medoides (PAM) ----
+
+# Gastos de 5 clientes: quatro parecidos e um outlier (5000)
+gastos_exemplo <- c(100, 120, 130, 150, 5000)
+
+# Centroide: a média (puxada pelo outlier)
+mean(gastos_exemplo)
+
+# Medoide: para cada cliente, somamos as distâncias até todos os outros...
+soma_dist <- sapply(gastos_exemplo, function(m) sum(abs(gastos_exemplo - m)))
+soma_dist
+
+# ...e o medoide é o cliente com a menor soma
+gastos_exemplo[which.min(soma_dist)]
+
+# PAM com k_escolhido grupos, a partir da matriz de distâncias euclidianas
+# (sem set.seed: o PAM não tem sorteio, o resultado é sempre o mesmo)
+pam_euc <- pam(dist_euc, k = k_escolhido)
+
+# Grupo de cada cliente (1, 2 ou 3)
+grupos_pam <- pam_euc$clustering
+
+# Quantos clientes em cada grupo?
+table(grupos_pam)
+
+# Posição (linha da base) dos clientes escolhidos como medoides
+pam_euc$id.med
+
+# As linhas da base que são medoides, com o número do grupo que cada uma representa
+medoides <- clientes[pam_euc$id.med, ] |>
+  mutate(grupo = seq_len(k_escolhido), .before = 1)
+
+# Os clientes-exemplo, com algumas variáveis fáceis de interpretar
+# (as.data.frame() mostra todas as colunas, sem esconder nenhuma)
+medoides |>
+  select(grupo, ID, Income, Idade, Filhos, Gasto_total, Compras_total,
+         NumWebPurchases, NumStorePurchases, NumWebVisitsMonth) |>
+  as.data.frame()
+
+# Centroide de cada grupo do PAM: a média de algumas variáveis originais
+clientes |>
+  mutate(grupo = grupos_pam) |>
+  group_by(grupo) |>
+  summarise(Income = mean(Income), Filhos = mean(Filhos),
+            Gasto_total = mean(Gasto_total)) |>
+  # arredondando: renda e gasto sem casas decimais, filhos com 2 casas
+  mutate(Income = round(Income), Filhos = round(Filhos, 2),
+         Gasto_total = round(Gasto_total))
+
+# Silhueta média geral
+pam_euc$silinfo$avg.width
+
+# Silhueta média de cada grupo
+pam_euc$silinfo$clus.avg.widths
+
+# Gráfico de silhueta: uma barra por cliente, ordenadas dentro de cada grupo
+# (barras abaixo de zero são clientes que talvez estejam no grupo errado)
+# silhouette() calcula a silhueta de cada cliente; plot() desenha (border = NA tira o contorno das barras)
+plot(silhouette(pam_euc), border = NA, col = c("steelblue", "firebrick", "darkgreen"),
+     main = "Silhueta de cada cliente (PAM, k = 3)",
+     xlab = "Largura da silhueta", sub = "")
+
+# Tabela cruzada: grupos do k-means (linhas) × grupos do PAM (colunas)
+table(kmeans = grupos_km, pam = grupos_pam)
+
+# 6b. Bônus: dados mistos e distância de Gower (pode pular) ----
+# ATENÇÃO: este bloco é OPCIONAL. Nenhuma seção seguinte usa objetos criados aqui.
+# Para pular, vá direto para a linha "# ---- fim do bônus 6b ----".
+
+# Dados mistos: as 15 numéricas (já com log1p nos gastos) + 2 categóricas como factor
+dados_gower <- dados_cluster |>
+  mutate(Education = factor(clientes$Education),
+         Marital_Status = factor(clientes$Marital_Status))
+
+# Conferindo o tipo de cada coluna: "numeric" ou "factor"
+sapply(dados_gower, class)
+
+# Matriz de dissimilaridades de Gower entre todos os pares de clientes
+# (não usamos scale(): a Gower divide cada diferença pela amplitude da variável)
+dist_gower <- daisy(dados_gower, metric = "gower")
+
+# "mixed" = a daisy reconheceu que há variáveis numéricas e categóricas
+attr(dist_gower, "Metric")
+
+# Resumo das dissimilaridades: todas entre 0 e 1
+summary(as.vector(dist_gower))
+
+# Os dois clientes que vamos comparar
+# (as.data.frame() mostra todas as colunas e mantém os números das linhas da base: 1 e 3)
+as.data.frame(dados_gower)[c(1, 3), ]
+
+# Amplitude (maior valor - menor valor) de cada variável numérica
+# (\(x) é um atalho do R para function(x): uma função pequena, escrita ali mesmo)
+amplitude <- sapply(dados_gower[vars_cluster], \(x) max(x) - min(x))
+
+# Parcela de cada numérica: |diferença| / amplitude (sempre entre 0 e 1)
+# (unlist() transforma a linha da tabela num vetor simples de números, para fazer a conta)
+parcela_num <- abs(unlist(dados_gower[1, vars_cluster]) -
+                   unlist(dados_gower[3, vars_cluster])) / amplitude
+
+# Parcela de cada categórica: 0 se a categoria é a mesma, 1 se é diferente
+parcela_cat <- c(
+  Education = as.numeric(dados_gower$Education[1] != dados_gower$Education[3]),
+  Marital_Status = as.numeric(dados_gower$Marital_Status[1] != dados_gower$Marital_Status[3]))
+
+# As 17 parcelas, arredondadas
+round(c(parcela_num, parcela_cat), 3)
+
+# Gower = média das 17 parcelas
+mean(c(parcela_num, parcela_cat))
+
+# O valor calculado pela daisy() para o mesmo par (linha 1, coluna 3)
+as.matrix(dist_gower)[1, 3]
+
+# Hierárquico com a matriz de Gower e ligação média
+hc_gower <- hclust(dist_gower, method = "average")
+# (Ward com Gower só com ressalva, e não rodamos aqui:
+#  hclust(sqrt(dist_gower), method = "ward.D2"))
+
+# Cortando a árvore em k grupos: quantos clientes em cada grupo?
+table(cutree(hc_gower, k = k_escolhido))
+
+# PAM com a matriz de Gower e o mesmo k (sem sorteio, sem set.seed)
+pam_gower <- pam(dist_gower, k = k_escolhido)
+
+# Tamanho dos grupos e silhueta média (calculada com a Gower)
+table(pam_gower$clustering)
+pam_gower$silinfo$avg.width
+
+# Tabela cruzada: PAM com Gower (linhas) × PAM euclidiano (colunas)
+tab_gower_vs_euc <- table(pam_gower = pam_gower$clustering, pam_euc = grupos_pam)
+tab_gower_vs_euc
+
+# Estado civil dentro de cada grupo do PAM com Gower
+table(pam_gower = pam_gower$clustering, estado_civil = clientes$Marital_Status)
+
+# ---- fim do bônus 6b ----
+
+# 7. Comparando as técnicas ----
+
+# Tabela cruzada: hierárquico (linhas) × k-means (colunas)
+# Lembre: "grupo 1" de uma técnica NÃO é o "grupo 1" da outra (os rótulos são arbitrários)
+table(hierarquico = grupos_hc, kmeans = grupos_km)
+
+# Tabela cruzada: k-means (linhas) × PAM (colunas), a mesma que vimos na seção 6
+table(kmeans = grupos_km, pam = grupos_pam)
+
+# Função: recebe os grupos de uma técnica e devolve a silhueta média
+# (silhouette() precisa dos grupos e da matriz de distâncias; a coluna "sil_width" é a silhueta de cada cliente)
+calc_silhueta <- function(grupos) {
+  mean(silhouette(grupos, dist_euc)[, "sil_width"])
+}
+
+# Tabela-resumo: uma linha por técnica, com a silhueta média e o tamanho dos grupos
+comparacao_tecnicas <- tibble(
+  tecnica = c("hierarquico", "kmeans", "pam"),
+  silhueta_media = c(calc_silhueta(grupos_hc),
+                     calc_silhueta(grupos_km),
+                     calc_silhueta(grupos_pam)),
+  # tamanhos dos grupos 1, 2 e 3, colados num texto só (ex.: "825 / 838 / 549")
+  tamanhos = c(paste(table(grupos_hc), collapse = " / "),
+               paste(table(grupos_km), collapse = " / "),
+               paste(table(grupos_pam), collapse = " / ")))
+
+comparacao_tecnicas
+
+# Técnica escolhida para entregar ao marketing (justificativa no texto)
+tecnica_final <- "pam"
+
+# Os grupos da técnica escolhida: um número de grupo para cada cliente
+# (se trocar a técnica, troque aqui também; e os medoides deixam de valer, pois são do PAM)
+grupos_final <- grupos_pam
+
+# Conferindo: tamanho de cada grupo
+table(grupos_final)
+
+# 8. Resultados para o negócio ----
+
+# PCA nos dados padronizados (as mesmas 15 variáveis do agrupamento)
+pca <- prcomp(dados_pad)
+
+# Variância explicada pelos 4 primeiros componentes:
+# "Proportion of Variance" = de cada componente; "Cumulative Proportion" = acumulada
+summary(pca)$importance[, 1:4] |> round(3)
+
+# Peso de cada variável nos 2 primeiros componentes (ajuda a "ler" os eixos)
+round(pca$rotation[, 1:2], 2)
+
+# Nomes dos segmentos, do MENOR para o MAIOR gasto total médio (a regra é explicada na próxima seção)
+nomes_segmentos <- c("Econômico", "Caçador de ofertas", "Premium")
+
+# Gasto total médio de cada grupo do PAM; rank() dá a posição do grupo (1 = menor gasto)
+gasto_medio_grupo <- tapply(clientes$Gasto_total, grupos_final, mean)
+segmento_pca <- nomes_segmentos[rank(gasto_medio_grupo)[grupos_final]]
+
+# Coordenadas de cada cliente nos 2 primeiros componentes, mais o nome do segmento
+# (o 1º componente é multiplicado por -1 só para a direita significar "gasta mais")
+pontos_pca <- tibble(CP1 = -pca$x[, "PC1"],
+                     CP2 = pca$x[, "PC2"],
+                     segmento = factor(segmento_pca, levels = nomes_segmentos))
+
+# Gráfico de dispersão: um ponto por cliente, cor = segmento
+pontos_pca |>
+  ggplot(aes(x = CP1, y = CP2, color = segmento)) +
+  geom_point(alpha = 0.5, size = 1.2) +
+  labs(x = "1º componente (45,7%): quanto o cliente gasta",
+       y = "2º componente (12,1%): desconto, internet e filhos",
+       color = "Segmento")
+
+# Perfil de cada grupo nas variáveis originais (médias; "_medio" no nome da coluna)
+perfil_segmentos <- clientes |>
+  mutate(grupo = grupos_final) |>
+  group_by(grupo) |>
+  summarise(n = n(),
+            # across(): aplica a média a várias colunas de uma vez
+            across(c(Income, Idade, Filhos, Kidhome, Teenhome, Recency,
+                     Gasto_total, Compras_total, MntWines, MntMeatProducts,
+                     NumDealsPurchases, NumWebPurchases, NumCatalogPurchases,
+                     NumStorePurchases, NumWebVisitsMonth, Tempo_casa_dias),
+                   mean, .names = "{.col}_medio"),
+            Gasto_total_mediano = median(Gasto_total),
+            # proporção de clientes sem filhos em casa
+            Sem_filhos_prop = mean(Filhos == 0),
+            # quanto (%) do gasto de TODA a base vem deste grupo
+            Receita_pct = 100 * sum(Gasto_total) / sum(clientes$Gasto_total))
+
+# Nomes dos segmentos, do MENOR para o MAIOR gasto total médio
+nomes_segmentos <- c("Econômico", "Caçador de ofertas", "Premium")
+
+# Regra: ordenar os grupos pelo gasto total médio e dar os nomes nessa ordem
+# (o nome depende do perfil, e não do número que a técnica deu ao grupo)
+perfil_segmentos <- perfil_segmentos |>
+  arrange(Gasto_total_medio) |>
+  mutate(segmento = factor(nomes_segmentos, levels = nomes_segmentos), .before = 1)
+
+# Base de clientes com o nome do segmento de cada um
+clientes_seg <- clientes |>
+  mutate(grupo = grupos_final) |>
+  left_join(perfil_segmentos |> select(grupo, segmento), by = "grupo")
+
+# Quantos clientes em cada segmento?
+clientes_seg |> count(segmento)
+
+# O perfil "deitado": uma linha por variável e uma coluna por segmento (mais fácil de ler)
+perfil_segmentos |>
+  select(-grupo) |>
+  pivot_longer(-segmento, names_to = "variavel", values_to = "valor") |>
+  mutate(valor = round(valor, 2)) |>
+  pivot_wider(names_from = segmento, values_from = valor) |>
+  as.data.frame()
+
+# Médias das variáveis padronizadas (dados_pad) dentro de cada segmento
+medias_pad <- as_tibble(dados_pad) |>
+  mutate(segmento = clientes_seg$segmento) |>
+  group_by(segmento) |>
+  summarise(across(everything(), mean)) |>
+  # formato longo: uma linha por segmento e variável
+  pivot_longer(-segmento, names_to = "variavel", values_to = "media_padronizada")
+
+# Mapa de calor: cor = média padronizada; o número dentro de cada casa é o valor
+medias_pad |>
+  ggplot(aes(x = segmento, y = variavel, fill = media_padronizada)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(media_padronizada, 1)), size = 3) +
+  # vermelho = abaixo da média, branco = na média, azul = acima da média
+  scale_fill_gradient2(low = "firebrick", mid = "white", high = "steelblue", midpoint = 0) +
+  labs(x = "Segmento", y = NULL, fill = "Média\npadronizada")
+
+# Função auxiliar: número no formato brasileiro (ponto no milhar, vírgula decimal)
+fmt <- function(x, casas = 0) {
+  formatC(x, format = "f", digits = casas, big.mark = ".", decimal.mark = ",")
+}
+
+# Atalho para não repetir "perfil_segmentos$" (as linhas estão em ordem crescente de gasto)
+p <- perfil_segmentos
+
+# Resumo em palavras de cada segmento, na ordem: Econômico, Caçador de ofertas, Premium
+resumos <- c(
+  "Renda mais baixa e gasto muito baixo; famílias com crianças pequenas; visita bastante o site, mas compra pouco.",
+  "Renda intermediária; o grupo que mais compra com desconto; compra bastante pelo site; famílias com adolescentes.",
+  "Renda alta e o maior gasto, puxado por vinhos e carnes; a maioria sem filhos em casa; compra na loja e pelo catálogo e quase não usa desconto.")
+
+# Ação de marketing sugerida para cada segmento, na mesma ordem
+acoes <- c(
+  "Canais baratos (e-mail, site): ofertas de entrada em itens básicos e infantis e um cupom para a primeira compra online, para transformar as muitas visitas ao site em compras. Evitar catálogo impresso, caro para quem gasta pouco.",
+  "Promoções e programa de pontos: combos para a família (vinho + carne) com desconto progressivo e ofertas relâmpago no site. Objetivo: aumentar o valor de cada compra sem depender só de desconto.",
+  "Relacionamento e exclusividade, não desconto: catálogo de vinhos e carnes selecionados, pré-lançamentos e degustações na loja. Objetivo: reter estes clientes, que geram a maior parte da receita.")
+
+# As fichas: segmento, perfil (resumo + números do perfil real) e ação
+# (sprintf() encaixa cada número, na ordem, no lugar de um %s do texto; %% vira o símbolo %)
+fichas <- tibble(
+  segmento = p$segmento,
+  perfil = paste(resumos,
+                 sprintf("%s clientes (%s%% do gasto total); renda média de %s; gasto médio de %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.",
+                         fmt(p$n), fmt(p$Receita_pct), fmt(p$Income_medio),
+                         fmt(p$Gasto_total_medio), fmt(p$Compras_total_medio, 1),
+                         fmt(p$Filhos_medio, 2), fmt(p$NumDealsPurchases_medio, 1),
+                         fmt(p$NumWebVisitsMonth_medio, 1))),
+  acao = acoes)
+
+# Mostrando cada ficha (strwrap quebra o texto longo em linhas de até 80 caracteres)
+for (i in seq_len(nrow(fichas))) {
+  cat("==== Segmento:", as.character(fichas$segmento[i]), "====\n")
+  cat("PERFIL:", strwrap(fichas$perfil[i], 80), sep = "\n")
+  cat("AÇÃO:", strwrap(fichas$acao[i], 80), sep = "\n")
+  cat("\n")
+}
+
+# Os medoides do PAM com o nome do segmento que cada um representa
+medoides |>
+  left_join(perfil_segmentos |> select(grupo, segmento), by = "grupo") |>
+  select(segmento, ID, Income, Idade, Filhos, Gasto_total, Compras_total,
+         NumDealsPurchases, NumWebPurchases, NumWebVisitsMonth) |>
+  arrange(segmento) |>
+  as.data.frame()
+
+# Taxas de aceite de campanhas em cada segmento
+# Response = aceitou a última campanha (0 ou 1); a média de 0/1 é a proporção de "sim"
+resposta_por_segmento <- clientes_seg |>
+  group_by(segmento) |>
+  summarise(n = n(),
+            taxa_resposta = mean(Response),
+            # aceitou ALGUMA das 6 campanhas (as 5 anteriores ou a última)?
+            taxa_alguma_campanha = mean(AcceptedCmp1 + AcceptedCmp2 + AcceptedCmp3 +
+                                          AcceptedCmp4 + AcceptedCmp5 + Response > 0))
+resposta_por_segmento
+
+# Para comparar: taxa de resposta na base inteira
+mean(clientes_seg$Response)
+
+# Gráfico de barras com as duas taxas lado a lado, por segmento
+resposta_por_segmento |>
+  pivot_longer(c(taxa_resposta, taxa_alguma_campanha),
+               names_to = "medida", values_to = "taxa") |>
+  mutate(medida = if_else(medida == "taxa_resposta",
+                          "Aceitou a última campanha", "Aceitou alguma campanha")) |>
+  ggplot(aes(x = segmento, y = taxa, fill = medida)) +
+  geom_col(position = "dodge") +
+  # eixo y em porcentagem (scales vem junto com o tidyverse)
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = "Segmento", y = "Proporção de clientes", fill = NULL)
