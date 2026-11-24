@@ -2245,10 +2245,12 @@ vertical-align: -.125em;
   <li><a href="#o-dendrograma" id="toc-o-dendrograma" class="nav-link" data-scroll-target="#o-dendrograma">O dendrograma</a></li>
   <li><a href="#cortando-a-árvore-em-k-grupos" id="toc-cortando-a-árvore-em-k-grupos" class="nav-link" data-scroll-target="#cortando-a-árvore-em-k-grupos">Cortando a árvore em k grupos</a></li>
   </ul></li>
-  <li><a href="#b.-bônus-dados-mistos-e-distância-de-gower-pode-pular" id="toc-b.-bônus-dados-mistos-e-distância-de-gower-pode-pular" class="nav-link" data-scroll-target="#b.-bônus-dados-mistos-e-distância-de-gower-pode-pular">6b. Bônus: dados mistos e distância de Gower (pode pular)</a>
+  <li><a href="#hierárquico-com-dados-mistos-distância-de-gower" id="toc-hierárquico-com-dados-mistos-distância-de-gower" class="nav-link" data-scroll-target="#hierárquico-com-dados-mistos-distância-de-gower">5. Hierárquico com dados mistos: distância de Gower</a>
   <ul class="collapse">
   <li><a href="#motivação-e-as-variáveis-categóricas" id="toc-motivação-e-as-variáveis-categóricas" class="nav-link" data-scroll-target="#motivação-e-as-variáveis-categóricas">Motivação: e as variáveis categóricas?</a></li>
   <li><a href="#como-a-gower-mede-a-diferença-entre-dois-clientes" id="toc-como-a-gower-mede-a-diferença-entre-dois-clientes" class="nav-link" data-scroll-target="#como-a-gower-mede-a-diferença-entre-dois-clientes">Como a Gower mede a diferença entre dois clientes</a></li>
+  <li><a href="#a-árvore-com-a-gower-average-e-complete" id="toc-a-árvore-com-a-gower-average-e-complete" class="nav-link" data-scroll-target="#a-árvore-com-a-gower-average-e-complete">A árvore com a Gower: average e complete</a></li>
+  <li><a href="#a-régua-mudou.-os-grupos-mudaram" id="toc-a-régua-mudou.-os-grupos-mudaram" class="nav-link" data-scroll-target="#a-régua-mudou.-os-grupos-mudaram">A régua mudou. Os grupos mudaram?</a></li>
   </ul></li>
   <li><a href="#resultados-para-o-negócio" id="toc-resultados-para-o-negócio" class="nav-link" data-scroll-target="#resultados-para-o-negócio">6. Resultados para o negócio</a>
   <ul class="collapse">
@@ -2824,7 +2826,7 @@ $ Response            &lt;dbl&gt; 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1
 <p>Ficam <strong>de fora</strong>:</p>
 <ul>
 <li><strong>Campanhas e reclamações</strong> (<code>AcceptedCmp1</code> a <code>5</code>, <code>Response</code>, <code>Complain</code>): queremos descobrir os grupos pelo <strong>jeito de comprar</strong> e só <strong>depois</strong> testar se eles respondem de forma diferente às campanhas. Se usássemos a resposta para formar os grupos, a validação seria circular.</li>
-<li><strong>Variáveis categóricas</strong> (<code>Education</code>, <code>Marital_Status</code>): a distância euclidiana (a “régua” que usaremos) só funciona com números. Elas ficam para o bloco bônus (distância de Gower), que lida com dados mistos.</li>
+<li><strong>Variáveis categóricas</strong> (<code>Education</code>, <code>Marital_Status</code>): a distância euclidiana (a “régua” que usaremos) só funciona com números. Elas ficam para a seção 5 (distância de Gower), que lida com dados mistos.</li>
 <li><strong>Totais</strong> (<code>Gasto_total</code>, <code>Compras_total</code>): são somas de variáveis que estão na lista, e incluí-los contaria o mesmo comportamento duas vezes. Eles servirão para <strong>descrever</strong> os segmentos depois.</li>
 <li><strong><code>Tempo_casa_dias</code></strong>: mede há quanto tempo a pessoa é cliente, e não o seu jeito de comprar nem o seu perfil. Também fica só para <strong>descrever</strong> os segmentos depois.</li>
 </ul>
@@ -3007,7 +3009,7 @@ NumCatalogPurchases   NumStorePurchases   NumWebVisitsMonth
 </section>
 <section id="cluster-hierárquico" class="level1">
 <h1>4. Cluster hierárquico</h1>
-<p>Agora sim vamos agrupar. Todas as técnicas desta aula partem da mesma pergunta: <strong>quão longe um cliente está do outro?</strong> Clientes “perto” devem cair no mesmo grupo; clientes “longe”, em grupos diferentes.</p>
+<p>Agora sim vamos agrupar. Tudo o que faremos parte da mesma pergunta: <strong>quão longe um cliente está do outro?</strong> Clientes “perto” devem cair no mesmo grupo; clientes “longe”, em grupos diferentes.</p>
 <section id="distância-entre-clientes-e-a-matriz-de-distâncias" class="level2">
 <h2 class="anchored" data-anchor-id="distância-entre-clientes-e-a-matriz-de-distâncias">Distância entre clientes e a matriz de distâncias</h2>
 <p>A <strong>distância euclidiana</strong> é a régua que já usamos na seção 3: para dois clientes, calculamos a diferença em cada uma das 15 variáveis padronizadas, elevamos ao quadrado, somamos e tiramos a raiz (o “Pitágoras” com 15 lados). A função <code>dist()</code> faz essa conta para <strong>todos os pares de clientes</strong> de uma vez e guarda o resultado numa <strong>matriz de distâncias</strong>: uma tabela em que a linha <em>i</em> e a coluna <em>j</em> dizem a distância entre o cliente <em>i</em> e o cliente <em>j</em>.</p>
@@ -3171,7 +3173,7 @@ Fábio 8.6   7.8   6.7   3.6   1.4</code></pre>
 2205    4    3 </code></pre>
 </div>
 </div>
-<p>O resultado é decepcionante. Com a single, os grupos têm <strong>2.208</strong>, <strong>3</strong> e <strong>1</strong> cliente; com a complete, <strong>2.199</strong>, <strong>9</strong> e <strong>4</strong>; com a average, <strong>2.205</strong>, <strong>4</strong> e <strong>3</strong>. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam poucos clientes (de 4 a 13) muito diferentes dos demais. O motivo é que esta base <strong>não tem grupos bem separados</strong>: os clientes formam um contínuo, sem “vazios” entre eles (voltaremos a isso na seção 5). A single sofre com o <strong>encadeamento</strong>: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando “grupos” quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.</p>
+<p>O resultado é decepcionante. Com a single, os grupos têm <strong>2.208</strong>, <strong>3</strong> e <strong>1</strong> cliente; com a complete, <strong>2.199</strong>, <strong>9</strong> e <strong>4</strong>; com a average, <strong>2.205</strong>, <strong>4</strong> e <strong>3</strong>. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam poucos clientes (de 4 a 13) muito diferentes dos demais. O motivo é que esta base <strong>não tem grupos bem separados</strong>: os clientes formam um contínuo, sem “vazios” entre eles (veremos isso no mapa da seção 6). A single sofre com o <strong>encadeamento</strong>: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando “grupos” quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.</p>
 </section>
 <section id="a-ligação-de-ward" class="level2">
 <h2 class="anchored" data-anchor-id="a-ligação-de-ward">A ligação de Ward</h2>
@@ -3249,21 +3251,8 @@ Fábio 8.6   7.8   6.7   3.6   1.4</code></pre>
 <p>O corte em 3 grupos gera grupos de <strong>825</strong>, <strong>838</strong> e <strong>549</strong> clientes: nenhum grupo minúsculo, o que é bom para o marketing (não vale a pena criar uma campanha para 10 pessoas). Quem é cada grupo veremos na seção 6; antes, na seção 5, vamos ver o que muda quando as variáveis categóricas entram no agrupamento.</p>
 </section>
 </section>
-<section id="b.-bônus-dados-mistos-e-distância-de-gower-pode-pular" class="level1">
-<h1>6b. Bônus: dados mistos e distância de Gower (pode pular)</h1>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Nota</span>Bloco bônus: pode pular
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Este bloco é <strong>opcional</strong>. Nada das seções 7 e 8 depende dele: se o tempo estiver curto, pule direto para a seção 7. No script <code>.R</code>, o bônus vai da linha <code># 6b. Bônus ...</code> até a linha <code># ---- fim do bônus 6b ----</code>.</p>
-</div>
-</div>
+<section id="hierárquico-com-dados-mistos-distância-de-gower" class="level1">
+<h1>5. Hierárquico com dados mistos: distância de Gower</h1>
 <section id="motivação-e-as-variáveis-categóricas" class="level2">
 <h2 class="anchored" data-anchor-id="motivação-e-as-variáveis-categóricas">Motivação: e as variáveis categóricas?</h2>
 <p>Na seção 3, deixamos de fora a <strong>escolaridade</strong> (<code>Education</code>) e o <strong>estado civil</strong> (<code>Marital_Status</code>), porque a distância euclidiana só funciona com números: não dá para calcular “PhD menos Graduation”. Mas e se o marketing quiser que esses dados entrem no agrupamento? Precisamos de uma régua que aceite <strong>dados mistos</strong> (números e categorias ao mesmo tempo). A mais conhecida é a <strong>distância de Gower</strong>.</p>
@@ -3277,17 +3266,15 @@ Fábio 8.6   7.8   6.7   3.6   1.4</code></pre>
 </ul>
 <p>Usamos as <strong>mesmas 15 variáveis numéricas</strong> da trilha principal, <strong>com o <code>log1p()</code> nos gastos</strong> (isto é, partimos de <code>dados_cluster</code>). O log importa aqui também: como a Gower divide pela amplitude, um único cliente com gasto enorme “esticaria” a amplitude, e as diferenças entre todos os outros clientes ficariam minúsculas. Às 15 numéricas, somamos <code>Education</code> e <code>Marital_Status</code> como <strong>factor</strong> (o tipo do R para variáveis categóricas). A função <code>daisy()</code> do pacote <code>cluster</code>, com <code>metric = &quot;gower&quot;</code>, calcula a matriz de dissimilaridades de uma só vez.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 6b. Bônus: dados mistos e distância de Gower (pode pular) ----</span></span>
-<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a><span class="co"># ATENÇÃO: este bloco é OPCIONAL. Nenhuma seção seguinte usa objetos criados aqui.</span></span>
-<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Para pular, vá direto para a linha &quot;# ---- fim do bônus 6b ----&quot;.</span></span>
-<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Dados mistos: as 15 numéricas (já com log1p nos gastos) + 2 categóricas como factor</span></span>
-<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>dados_gower <span class="ot">&lt;-</span> dados_cluster <span class="sc">|&gt;</span></span>
-<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Education =</span> <span class="fu">factor</span>(clientes<span class="sc">$</span>Education),</span>
-<span id="cb93-8"><a href="#cb93-8" aria-hidden="true" tabindex="-1"></a>         <span class="at">Marital_Status =</span> <span class="fu">factor</span>(clientes<span class="sc">$</span>Marital_Status))</span>
-<span id="cb93-9"><a href="#cb93-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb93-10"><a href="#cb93-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Conferindo o tipo de cada coluna: &quot;numeric&quot; ou &quot;factor&quot;</span></span>
-<span id="cb93-11"><a href="#cb93-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(dados_gower, class)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Hierárquico com dados mistos: distância de Gower ----</span></span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Dados mistos: as 15 numéricas (já com log1p nos gastos) + 2 categóricas como factor</span></span>
+<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a>dados_gower <span class="ot">&lt;-</span> dados_cluster <span class="sc">|&gt;</span></span>
+<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Education =</span> <span class="fu">factor</span>(clientes<span class="sc">$</span>Education),</span>
+<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">Marital_Status =</span> <span class="fu">factor</span>(clientes<span class="sc">$</span>Marital_Status))</span>
+<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-8"><a href="#cb93-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Conferindo o tipo de cada coluna: &quot;numeric&quot; ou &quot;factor&quot;</span></span>
+<span id="cb93-9"><a href="#cb93-9" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(dados_gower, class)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>             Income               Idade              Filhos             Recency 
           &quot;numeric&quot;           &quot;numeric&quot;           &quot;numeric&quot;           &quot;numeric&quot; 
@@ -3377,21 +3364,98 @@ NumCatalogPurchases   NumStorePurchases   NumWebVisitsMonth           Education
 <pre><code>[1] 0.1996309</code></pre>
 </div>
 </div>
-<p>As duas contas dão o mesmo valor, <strong>0,1996</strong> (cerca de 0,20): os dois clientes são bem parecidos. Repare nas parcelas: a de <code>Education</code> é <strong>0</strong> (mesma escolaridade) e a de <code>Marital_Status</code> é <strong>1</strong> (estado civil diferente). A maior parcela numérica é a de <code>NumStorePurchases</code> (<strong>0,462</strong>), menos da metade da parcela do estado civil. Uma única categórica diferente vale tanto quanto a <strong>maior diferença possível</strong> numa numérica (por exemplo, o cliente mais pobre contra o mais rico da base). Guarde essa observação: ela vai aparecer nos resultados.</p>
+<p>As duas contas dão o mesmo valor, <strong>0,1996</strong> (cerca de 0,20): os dois clientes são bem parecidos. Repare nas parcelas: a de <code>Education</code> é <strong>0</strong> (mesma escolaridade) e a de <code>Marital_Status</code> é <strong>1</strong> (estado civil diferente). A maior parcela numérica é a de <code>NumStorePurchases</code> (<strong>0,462</strong>), menos da metade da parcela do estado civil. Uma única categórica diferente vale tanto quanto a <strong>maior diferença possível</strong> numa numérica (por exemplo, o cliente mais pobre contra o mais rico da base). Guarde essa observação: ela vai reaparecer quando olharmos a árvore da Gower mais de perto.</p>
 </section>
+</section>
+<section id="a-árvore-com-a-gower-average-e-complete" class="level2">
+<h2 class="anchored" data-anchor-id="a-árvore-com-a-gower-average-e-complete">A árvore com a Gower: average e complete</h2>
+<p>Com a matriz de Gower, o cluster hierárquico funciona do mesmo jeito: ele só precisa das dissimilaridades entre os pares. Só trocamos a <strong>régua</strong>. Mas qual <strong>regra de ligação</strong> usar? O Ward foi pensado para a distância euclidiana (ele mede o espalhamento em volta do centro com médias e quadrados), e a Gower não é euclidiana. Então usamos as regras que só olham para as dissimilaridades entre pares de clientes, como a <strong>average</strong> e a <strong>complete</strong> da seção 4. (Existe uma adaptação do Ward para a Gower, mas ela fica fora desta aula.)</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Hierárquico com a matriz de Gower: ligação média (average) e completa (complete)</span></span>
+<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>hc_gower_average  <span class="ot">&lt;-</span> <span class="fu">hclust</span>(dist_gower, <span class="at">method =</span> <span class="st">&quot;average&quot;</span>)</span>
+<span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a>hc_gower_complete <span class="ot">&lt;-</span> <span class="fu">hclust</span>(dist_gower, <span class="at">method =</span> <span class="st">&quot;complete&quot;</span>)</span>
+<span id="cb107-4"><a href="#cb107-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb107-5"><a href="#cb107-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Tamanhos dos grupos quando cortamos cada árvore em 3 grupos</span></span>
+<span id="cb107-6"><a href="#cb107-6" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">cutree</span>(hc_gower_average, <span class="at">k =</span> <span class="dv">3</span>))</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+   1    2    3 
+2207    4    1 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="fu">cutree</span>(hc_gower_complete, <span class="at">k =</span> <span class="dv">3</span>))</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+   1    2    3 
+1357  851    4 </code></pre>
+</div>
+</div>
+<p>A <strong>average</strong> repete o que vimos na base real com a distância euclidiana: o corte em 3 deixa <strong>2.207 clientes num grupo só</strong>, e os outros dois têm <strong>4 clientes e 1 cliente</strong>. A <strong>complete</strong> se sai melhor: divide a base em dois grandes grupos, de <strong>1.357</strong> e <strong>851</strong> clientes. O terceiro grupo tem só <strong>4</strong> clientes, então, para a complete, o corte que faz sentido é em <strong>2 grupos</strong>.</p>
+</section>
+<section id="a-régua-mudou.-os-grupos-mudaram" class="level2">
+<h2 class="anchored" data-anchor-id="a-régua-mudou.-os-grupos-mudaram">A régua mudou. Os grupos mudaram?</h2>
+<p>Vamos cortar a árvore da complete em <strong>2 grupos</strong> e compará-los com os 3 grupos do Ward euclidiano da seção 4 (<code>grupos_hc</code>). Lembre que os números dos grupos são só rótulos: o “grupo 1” de uma árvore não tem nada a ver com o “grupo 1” da outra.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cortando a árvore da complete (Gower) em 2 grupos</span></span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>grupos_gower <span class="ot">&lt;-</span> <span class="fu">cutree</span>(hc_gower_complete, <span class="at">k =</span> <span class="dv">2</span>)</span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Tabela cruzada: grupos da Gower (linhas) × grupos do Ward euclidiano (colunas)</span></span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">gower =</span> grupos_gower, <span class="at">ward =</span> grupos_hc)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     ward
+gower   1   2   3
+    1 821 107 429
+    2   4 731 120</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ward euclidiano: gasto total médio de cada grupo (para saber quem gasta mais)</span></span>
+<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tapply</span>(clientes<span class="sc">$</span>Gasto_total, grupos_hc, mean) <span class="sc">|&gt;</span> <span class="fu">round</span>()</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   1    2    3 
+1217   68  514 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Estado civil dentro de cada grupo da Gower</span></span>
+<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">gower =</span> grupos_gower, <span class="at">estado_civil =</span> clientes<span class="sc">$</span>Marital_Status)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     estado_civil
+gower Casado/Junto Sozinho
+    1          852     505
+    2          576     279</code></pre>
+</div>
+</div>
+<p>Pelo gasto médio, o grupo 1 do Ward é o de <strong>maior gasto</strong> (1.217), o grupo 2 o de <strong>menor gasto</strong> (68) e o grupo 3 o intermediário (514). A tabela cruzada mostra que a Gower reencontrou essencialmente a mesma divisão:</p>
+<ul>
+<li>o grupo 1 da Gower tem <strong>821 dos 825</strong> clientes do grupo de maior gasto;</li>
+<li>o grupo 2 da Gower tem <strong>731 dos 838</strong> clientes do grupo de menor gasto;</li>
+<li>os clientes do grupo intermediário se dividem entre os dois (429 e 120).</li>
+</ul>
+<p>E o estado civil <strong>não</strong> decidiu essa divisão: a proporção de casados é parecida nos dois grupos da Gower (852 de 1.357, cerca de <strong>63%</strong>, contra 576 de 855, cerca de <strong>67%</strong>). Mesmo com as duas categóricas na régua, quem separa os clientes, no primeiro corte da árvore, continua sendo <strong>quanto eles gastam</strong>.</p>
+<p>E o estado civil? Ele <strong>pesa</strong> na Gower (lembre da conta à mão: um estado civil diferente vale 1 inteiro), mas só aparece mais embaixo na árvore. Cortando em <strong>4 grupos</strong>:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cortando a mesma árvore em 4 grupos: estado civil em cada grupo</span></span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">gower_4 =</span> <span class="fu">cutree</span>(hc_gower_complete, <span class="at">k =</span> <span class="dv">4</span>), <span class="at">estado_civil =</span> clientes<span class="sc">$</span>Marital_Status)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       estado_civil
+gower_4 Casado/Junto Sozinho
+      1          852     318
+      2          572     279
+      3            0     187
+      4            4       0</code></pre>
+</div>
+</div>
+<p>No corte em 4 aparece um grupo de <strong>187 clientes, todos “Sozinho”</strong>. É o efeito da conta à mão: como uma categórica diferente vale 1 inteiro na média, o estado civil acaba criando uma “fronteira” própria, mas só nos cortes mais baixos da árvore, depois que a divisão principal (pelo gasto) já foi feita.</p>
+<p><strong>Conclusão:</strong> a régua mudou, mas a <strong>estrutura principal se manteve</strong>: com ou sem as categóricas, os clientes se separam primeiro pelo gasto. Isso nos dá mais confiança nos grupos da seção 4. Para entregar ao marketing, seguimos com os <strong>3 grupos do Ward euclidiano</strong>: eles usam só as variáveis de comportamento de compra e dividem a base em 3 grupos de tamanhos úteis. Incluir variáveis (como o estado civil) é sempre uma <strong>escolha</strong>, e o analista precisa olhar o resultado e perguntar se os grupos respondem à pergunta do negócio.</p>
 </section>
 </section>
 <section id="resultados-para-o-negócio" class="level1">
 <h1>6. Resultados para o negócio</h1>
 <p>Os segmentos que vão para o marketing são os <strong>3 grupos do Ward com a distância euclidiana</strong> (seção 4): eles separam os clientes pelo <strong>comportamento de compra</strong>, e a seção 5 mostrou que a estrutura principal se mantém mesmo quando a régua muda.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Resultados para o negócio ----</span></span>
-<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Os grupos que vão para o marketing: os do Ward euclidiano (seção 4)</span></span>
-<span id="cb107-4"><a href="#cb107-4" aria-hidden="true" tabindex="-1"></a>grupos_final <span class="ot">&lt;-</span> grupos_hc</span>
-<span id="cb107-5"><a href="#cb107-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-6"><a href="#cb107-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Conferindo: tamanho de cada grupo</span></span>
-<span id="cb107-7"><a href="#cb107-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(grupos_final)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Resultados para o negócio ----</span></span>
+<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Os grupos que vão para o marketing: os do Ward euclidiano (seção 4)</span></span>
+<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a>grupos_final <span class="ot">&lt;-</span> grupos_hc</span>
+<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-6"><a href="#cb119-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Conferindo: tamanho de cada grupo</span></span>
+<span id="cb119-7"><a href="#cb119-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(grupos_final)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>grupos_final
   1   2   3 
@@ -3404,20 +3468,20 @@ NumCatalogPurchases   NumStorePurchases   NumWebVisitsMonth           Education
 <p>Cada cliente é descrito por 15 variáveis, e não dá para desenhar um gráfico com 15 eixos. A <strong>PCA</strong> (<em>análise de componentes principais</em>) resolve isso: ela cria novas variáveis, os <strong>componentes principais</strong>, que são combinações das 15 originais. O <strong>1º componente</strong> é a direção em que os clientes <strong>mais variam</strong>; o 2º é a direção que mais varia entre as que sobram, e assim por diante. Desenhando só os 2 primeiros, temos um “mapa” dos clientes que perde um pouco de informação, mas guarda o principal.</p>
 <p>A <strong>variância explicada</strong> diz quanto da variação total dos dados cada componente “guarda”. Usamos a função <code>prcomp()</code> sobre <code>dados_pad</code> (os dados já padronizados).</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="co"># PCA nos dados padronizados (as mesmas 15 variáveis do agrupamento)</span></span>
-<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>pca <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(dados_pad)</span>
-<span id="cb109-3"><a href="#cb109-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb109-4"><a href="#cb109-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Variância explicada pelos 4 primeiros componentes:</span></span>
-<span id="cb109-5"><a href="#cb109-5" aria-hidden="true" tabindex="-1"></a><span class="co"># &quot;Proportion of Variance&quot; = de cada componente; &quot;Cumulative Proportion&quot; = acumulada</span></span>
-<span id="cb109-6"><a href="#cb109-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pca)<span class="sc">$</span>importance[, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>] <span class="sc">|&gt;</span> <span class="fu">round</span>(<span class="dv">3</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="co"># PCA nos dados padronizados (as mesmas 15 variáveis do agrupamento)</span></span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>pca <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(dados_pad)</span>
+<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Variância explicada pelos 4 primeiros componentes:</span></span>
+<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a><span class="co"># &quot;Proportion of Variance&quot; = de cada componente; &quot;Cumulative Proportion&quot; = acumulada</span></span>
+<span id="cb121-6"><a href="#cb121-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(pca)<span class="sc">$</span>importance[, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>] <span class="sc">|&gt;</span> <span class="fu">round</span>(<span class="dv">3</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                         PC1   PC2   PC3   PC4
 Standard deviation     2.617 1.347 1.089 1.002
 Proportion of Variance 0.457 0.121 0.079 0.067
 Cumulative Proportion  0.457 0.578 0.657 0.724</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Peso de cada variável nos 2 primeiros componentes (ajuda a &quot;ler&quot; os eixos)</span></span>
-<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(pca<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">2</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Peso de cada variável nos 2 primeiros componentes (ajuda a &quot;ler&quot; os eixos)</span></span>
+<span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(pca<span class="sc">$</span>rotation[, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], <span class="dv">2</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                      PC1   PC2
 Income              -0.32  0.00
@@ -3440,26 +3504,26 @@ NumWebVisitsMonth    0.23  0.34</code></pre>
 <p>O 1º componente guarda <strong>45,7%</strong> da variação e o 2º, <strong>12,1%</strong>: juntos, <strong>57,8%</strong>. O mapa em 2D mostra, portanto, pouco mais da metade da informação, e grupos que parecem “encostados” no mapa podem estar mais separados nas outras dimensões.</p>
 <p>Lendo os pesos: no 1º componente, todos os <strong>gastos</strong>, a <strong>renda</strong> e as compras por catálogo e na loja têm pesos parecidos (em torno de −0,3), e <code>Filhos</code> e <code>NumWebVisitsMonth</code> têm peso positivo. Ele mede, em resumo, <strong>“quanto o cliente gasta”</strong>. O sinal de um componente é arbitrário (trocar todos os sinais dá o mesmo componente), então no gráfico multiplicamos o 1º por −1 para que <strong>a direita seja “gasta mais”</strong>. No 2º componente, os maiores pesos são de <code>NumDealsPurchases</code> (0,61), <code>Filhos</code> (0,42), <code>NumWebPurchases</code> (0,39) e <code>NumWebVisitsMonth</code> (0,34): ele mede <strong>“compra com desconto, pela internet, e tem filhos”</strong>.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Nomes dos segmentos, do MENOR para o MAIOR gasto total médio (a regra é explicada na próxima seção)</span></span>
-<span id="cb113-2"><a href="#cb113-2" aria-hidden="true" tabindex="-1"></a>nomes_segmentos <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Econômico&quot;</span>, <span class="st">&quot;Caçador de ofertas&quot;</span>, <span class="st">&quot;Premium&quot;</span>)</span>
-<span id="cb113-3"><a href="#cb113-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-4"><a href="#cb113-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Gasto total médio de cada grupo do Ward; rank() dá a posição do grupo (1 = menor gasto)</span></span>
-<span id="cb113-5"><a href="#cb113-5" aria-hidden="true" tabindex="-1"></a>gasto_medio_grupo <span class="ot">&lt;-</span> <span class="fu">tapply</span>(clientes<span class="sc">$</span>Gasto_total, grupos_final, mean)</span>
-<span id="cb113-6"><a href="#cb113-6" aria-hidden="true" tabindex="-1"></a>segmento_pca <span class="ot">&lt;-</span> nomes_segmentos[<span class="fu">rank</span>(gasto_medio_grupo)[grupos_final]]</span>
-<span id="cb113-7"><a href="#cb113-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-8"><a href="#cb113-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Coordenadas de cada cliente nos 2 primeiros componentes, mais o nome do segmento</span></span>
-<span id="cb113-9"><a href="#cb113-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (o 1º componente é multiplicado por -1 só para a direita significar &quot;gasta mais&quot;)</span></span>
-<span id="cb113-10"><a href="#cb113-10" aria-hidden="true" tabindex="-1"></a>pontos_pca <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">CP1 =</span> <span class="sc">-</span>pca<span class="sc">$</span>x[, <span class="st">&quot;PC1&quot;</span>],</span>
-<span id="cb113-11"><a href="#cb113-11" aria-hidden="true" tabindex="-1"></a>                     <span class="at">CP2 =</span> pca<span class="sc">$</span>x[, <span class="st">&quot;PC2&quot;</span>],</span>
-<span id="cb113-12"><a href="#cb113-12" aria-hidden="true" tabindex="-1"></a>                     <span class="at">segmento =</span> <span class="fu">factor</span>(segmento_pca, <span class="at">levels =</span> nomes_segmentos))</span>
-<span id="cb113-13"><a href="#cb113-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb113-14"><a href="#cb113-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de dispersão: um ponto por cliente, cor = segmento</span></span>
-<span id="cb113-15"><a href="#cb113-15" aria-hidden="true" tabindex="-1"></a>pontos_pca <span class="sc">|&gt;</span></span>
-<span id="cb113-16"><a href="#cb113-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> CP1, <span class="at">y =</span> CP2, <span class="at">color =</span> segmento)) <span class="sc">+</span></span>
-<span id="cb113-17"><a href="#cb113-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
-<span id="cb113-18"><a href="#cb113-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;1º componente (45,7%): quanto o cliente gasta&quot;</span>,</span>
-<span id="cb113-19"><a href="#cb113-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&quot;2º componente (12,1%): desconto, internet e filhos&quot;</span>,</span>
-<span id="cb113-20"><a href="#cb113-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">&quot;Segmento&quot;</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb125"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Nomes dos segmentos, do MENOR para o MAIOR gasto total médio (a regra é explicada na próxima seção)</span></span>
+<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a>nomes_segmentos <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Econômico&quot;</span>, <span class="st">&quot;Caçador de ofertas&quot;</span>, <span class="st">&quot;Premium&quot;</span>)</span>
+<span id="cb125-3"><a href="#cb125-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-4"><a href="#cb125-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Gasto total médio de cada grupo do Ward; rank() dá a posição do grupo (1 = menor gasto)</span></span>
+<span id="cb125-5"><a href="#cb125-5" aria-hidden="true" tabindex="-1"></a>gasto_medio_grupo <span class="ot">&lt;-</span> <span class="fu">tapply</span>(clientes<span class="sc">$</span>Gasto_total, grupos_final, mean)</span>
+<span id="cb125-6"><a href="#cb125-6" aria-hidden="true" tabindex="-1"></a>segmento_pca <span class="ot">&lt;-</span> nomes_segmentos[<span class="fu">rank</span>(gasto_medio_grupo)[grupos_final]]</span>
+<span id="cb125-7"><a href="#cb125-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-8"><a href="#cb125-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Coordenadas de cada cliente nos 2 primeiros componentes, mais o nome do segmento</span></span>
+<span id="cb125-9"><a href="#cb125-9" aria-hidden="true" tabindex="-1"></a><span class="co"># (o 1º componente é multiplicado por -1 só para a direita significar &quot;gasta mais&quot;)</span></span>
+<span id="cb125-10"><a href="#cb125-10" aria-hidden="true" tabindex="-1"></a>pontos_pca <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">CP1 =</span> <span class="sc">-</span>pca<span class="sc">$</span>x[, <span class="st">&quot;PC1&quot;</span>],</span>
+<span id="cb125-11"><a href="#cb125-11" aria-hidden="true" tabindex="-1"></a>                     <span class="at">CP2 =</span> pca<span class="sc">$</span>x[, <span class="st">&quot;PC2&quot;</span>],</span>
+<span id="cb125-12"><a href="#cb125-12" aria-hidden="true" tabindex="-1"></a>                     <span class="at">segmento =</span> <span class="fu">factor</span>(segmento_pca, <span class="at">levels =</span> nomes_segmentos))</span>
+<span id="cb125-13"><a href="#cb125-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb125-14"><a href="#cb125-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de dispersão: um ponto por cliente, cor = segmento</span></span>
+<span id="cb125-15"><a href="#cb125-15" aria-hidden="true" tabindex="-1"></a>pontos_pca <span class="sc">|&gt;</span></span>
+<span id="cb125-16"><a href="#cb125-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> CP1, <span class="at">y =</span> CP2, <span class="at">color =</span> segmento)) <span class="sc">+</span></span>
+<span id="cb125-17"><a href="#cb125-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>, <span class="at">size =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb125-18"><a href="#cb125-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;1º componente (45,7%): quanto o cliente gasta&quot;</span>,</span>
+<span id="cb125-19"><a href="#cb125-19" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&quot;2º componente (12,1%): desconto, internet e filhos&quot;</span>,</span>
+<span id="cb125-20"><a href="#cb125-20" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">&quot;Segmento&quot;</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -3476,39 +3540,39 @@ NumWebVisitsMonth    0.23  0.34</code></pre>
 <p>Agora descrevemos cada grupo nas <strong>variáveis originais</strong> (sem log e sem padronização), que o marketing entende: renda em unidades monetárias, número de filhos, gasto em 2 anos e assim por diante. Usamos médias, e para o gasto total também a mediana (lembre que o gasto tem cauda longa).</p>
 <p><strong>Os nomes.</strong> Precisamos dar um nome a cada grupo, mas <strong>não podemos amarrar o nome ao número do grupo</strong> (do tipo “grupo 1 = Premium”): os números são rótulos arbitrários e podem mudar se alguém trocar a técnica, os dados ou a versão de um pacote. Se mudarem, a ficha passaria a descrever o grupo errado, sem nenhum aviso. Por isso, o nome é dado por uma <strong>regra sobre o perfil</strong>: ordenamos os grupos pelo <strong>gasto total médio</strong>, do menor para o maior, e damos os nomes nessa ordem.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Perfil de cada grupo nas variáveis originais (médias; &quot;_medio&quot; no nome da coluna)</span></span>
-<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>perfil_segmentos <span class="ot">&lt;-</span> clientes <span class="sc">|&gt;</span></span>
-<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">grupo =</span> grupos_final) <span class="sc">|&gt;</span></span>
-<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(grupo) <span class="sc">|&gt;</span></span>
-<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
-<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a>            <span class="co"># across(): aplica a média a várias colunas de uma vez</span></span>
-<span id="cb114-7"><a href="#cb114-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">across</span>(<span class="fu">c</span>(Income, Idade, Filhos, Kidhome, Teenhome, Recency,</span>
-<span id="cb114-8"><a href="#cb114-8" aria-hidden="true" tabindex="-1"></a>                     Gasto_total, Compras_total, MntWines, MntMeatProducts,</span>
-<span id="cb114-9"><a href="#cb114-9" aria-hidden="true" tabindex="-1"></a>                     NumDealsPurchases, NumWebPurchases, NumCatalogPurchases,</span>
-<span id="cb114-10"><a href="#cb114-10" aria-hidden="true" tabindex="-1"></a>                     NumStorePurchases, NumWebVisitsMonth, Tempo_casa_dias),</span>
-<span id="cb114-11"><a href="#cb114-11" aria-hidden="true" tabindex="-1"></a>                   mean, <span class="at">.names =</span> <span class="st">&quot;{.col}_medio&quot;</span>),</span>
-<span id="cb114-12"><a href="#cb114-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">Gasto_total_mediano =</span> <span class="fu">median</span>(Gasto_total),</span>
-<span id="cb114-13"><a href="#cb114-13" aria-hidden="true" tabindex="-1"></a>            <span class="co"># proporção de clientes sem filhos em casa</span></span>
-<span id="cb114-14"><a href="#cb114-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">Sem_filhos_prop =</span> <span class="fu">mean</span>(Filhos <span class="sc">==</span> <span class="dv">0</span>),</span>
-<span id="cb114-15"><a href="#cb114-15" aria-hidden="true" tabindex="-1"></a>            <span class="co"># quanto (%) do gasto de TODA a base vem deste grupo</span></span>
-<span id="cb114-16"><a href="#cb114-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">Receita_pct =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">sum</span>(Gasto_total) <span class="sc">/</span> <span class="fu">sum</span>(clientes<span class="sc">$</span>Gasto_total))</span>
-<span id="cb114-17"><a href="#cb114-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb114-18"><a href="#cb114-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Nomes dos segmentos, do MENOR para o MAIOR gasto total médio</span></span>
-<span id="cb114-19"><a href="#cb114-19" aria-hidden="true" tabindex="-1"></a>nomes_segmentos <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Econômico&quot;</span>, <span class="st">&quot;Caçador de ofertas&quot;</span>, <span class="st">&quot;Premium&quot;</span>)</span>
-<span id="cb114-20"><a href="#cb114-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb114-21"><a href="#cb114-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Regra: ordenar os grupos pelo gasto total médio e dar os nomes nessa ordem</span></span>
-<span id="cb114-22"><a href="#cb114-22" aria-hidden="true" tabindex="-1"></a><span class="co"># (o nome depende do perfil, e não do número que a técnica deu ao grupo)</span></span>
-<span id="cb114-23"><a href="#cb114-23" aria-hidden="true" tabindex="-1"></a>perfil_segmentos <span class="ot">&lt;-</span> perfil_segmentos <span class="sc">|&gt;</span></span>
-<span id="cb114-24"><a href="#cb114-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Gasto_total_medio) <span class="sc">|&gt;</span></span>
-<span id="cb114-25"><a href="#cb114-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">segmento =</span> <span class="fu">factor</span>(nomes_segmentos, <span class="at">levels =</span> nomes_segmentos), <span class="at">.before =</span> <span class="dv">1</span>)</span>
-<span id="cb114-26"><a href="#cb114-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb114-27"><a href="#cb114-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Base de clientes com o nome do segmento de cada um</span></span>
-<span id="cb114-28"><a href="#cb114-28" aria-hidden="true" tabindex="-1"></a>clientes_seg <span class="ot">&lt;-</span> clientes <span class="sc">|&gt;</span></span>
-<span id="cb114-29"><a href="#cb114-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">grupo =</span> grupos_final) <span class="sc">|&gt;</span></span>
-<span id="cb114-30"><a href="#cb114-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(perfil_segmentos <span class="sc">|&gt;</span> <span class="fu">select</span>(grupo, segmento), <span class="at">by =</span> <span class="st">&quot;grupo&quot;</span>)</span>
-<span id="cb114-31"><a href="#cb114-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb114-32"><a href="#cb114-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Quantos clientes em cada segmento?</span></span>
-<span id="cb114-33"><a href="#cb114-33" aria-hidden="true" tabindex="-1"></a>clientes_seg <span class="sc">|&gt;</span> <span class="fu">count</span>(segmento)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb126"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Perfil de cada grupo nas variáveis originais (médias; &quot;_medio&quot; no nome da coluna)</span></span>
+<span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a>perfil_segmentos <span class="ot">&lt;-</span> clientes <span class="sc">|&gt;</span></span>
+<span id="cb126-3"><a href="#cb126-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">grupo =</span> grupos_final) <span class="sc">|&gt;</span></span>
+<span id="cb126-4"><a href="#cb126-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(grupo) <span class="sc">|&gt;</span></span>
+<span id="cb126-5"><a href="#cb126-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb126-6"><a href="#cb126-6" aria-hidden="true" tabindex="-1"></a>            <span class="co"># across(): aplica a média a várias colunas de uma vez</span></span>
+<span id="cb126-7"><a href="#cb126-7" aria-hidden="true" tabindex="-1"></a>            <span class="fu">across</span>(<span class="fu">c</span>(Income, Idade, Filhos, Kidhome, Teenhome, Recency,</span>
+<span id="cb126-8"><a href="#cb126-8" aria-hidden="true" tabindex="-1"></a>                     Gasto_total, Compras_total, MntWines, MntMeatProducts,</span>
+<span id="cb126-9"><a href="#cb126-9" aria-hidden="true" tabindex="-1"></a>                     NumDealsPurchases, NumWebPurchases, NumCatalogPurchases,</span>
+<span id="cb126-10"><a href="#cb126-10" aria-hidden="true" tabindex="-1"></a>                     NumStorePurchases, NumWebVisitsMonth, Tempo_casa_dias),</span>
+<span id="cb126-11"><a href="#cb126-11" aria-hidden="true" tabindex="-1"></a>                   mean, <span class="at">.names =</span> <span class="st">&quot;{.col}_medio&quot;</span>),</span>
+<span id="cb126-12"><a href="#cb126-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">Gasto_total_mediano =</span> <span class="fu">median</span>(Gasto_total),</span>
+<span id="cb126-13"><a href="#cb126-13" aria-hidden="true" tabindex="-1"></a>            <span class="co"># proporção de clientes sem filhos em casa</span></span>
+<span id="cb126-14"><a href="#cb126-14" aria-hidden="true" tabindex="-1"></a>            <span class="at">Sem_filhos_prop =</span> <span class="fu">mean</span>(Filhos <span class="sc">==</span> <span class="dv">0</span>),</span>
+<span id="cb126-15"><a href="#cb126-15" aria-hidden="true" tabindex="-1"></a>            <span class="co"># quanto (%) do gasto de TODA a base vem deste grupo</span></span>
+<span id="cb126-16"><a href="#cb126-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">Receita_pct =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">sum</span>(Gasto_total) <span class="sc">/</span> <span class="fu">sum</span>(clientes<span class="sc">$</span>Gasto_total))</span>
+<span id="cb126-17"><a href="#cb126-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-18"><a href="#cb126-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Nomes dos segmentos, do MENOR para o MAIOR gasto total médio</span></span>
+<span id="cb126-19"><a href="#cb126-19" aria-hidden="true" tabindex="-1"></a>nomes_segmentos <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Econômico&quot;</span>, <span class="st">&quot;Caçador de ofertas&quot;</span>, <span class="st">&quot;Premium&quot;</span>)</span>
+<span id="cb126-20"><a href="#cb126-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-21"><a href="#cb126-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Regra: ordenar os grupos pelo gasto total médio e dar os nomes nessa ordem</span></span>
+<span id="cb126-22"><a href="#cb126-22" aria-hidden="true" tabindex="-1"></a><span class="co"># (o nome depende do perfil, e não do número que a técnica deu ao grupo)</span></span>
+<span id="cb126-23"><a href="#cb126-23" aria-hidden="true" tabindex="-1"></a>perfil_segmentos <span class="ot">&lt;-</span> perfil_segmentos <span class="sc">|&gt;</span></span>
+<span id="cb126-24"><a href="#cb126-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Gasto_total_medio) <span class="sc">|&gt;</span></span>
+<span id="cb126-25"><a href="#cb126-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">segmento =</span> <span class="fu">factor</span>(nomes_segmentos, <span class="at">levels =</span> nomes_segmentos), <span class="at">.before =</span> <span class="dv">1</span>)</span>
+<span id="cb126-26"><a href="#cb126-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-27"><a href="#cb126-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Base de clientes com o nome do segmento de cada um</span></span>
+<span id="cb126-28"><a href="#cb126-28" aria-hidden="true" tabindex="-1"></a>clientes_seg <span class="ot">&lt;-</span> clientes <span class="sc">|&gt;</span></span>
+<span id="cb126-29"><a href="#cb126-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">grupo =</span> grupos_final) <span class="sc">|&gt;</span></span>
+<span id="cb126-30"><a href="#cb126-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(perfil_segmentos <span class="sc">|&gt;</span> <span class="fu">select</span>(grupo, segmento), <span class="at">by =</span> <span class="st">&quot;grupo&quot;</span>)</span>
+<span id="cb126-31"><a href="#cb126-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb126-32"><a href="#cb126-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Quantos clientes em cada segmento?</span></span>
+<span id="cb126-33"><a href="#cb126-33" aria-hidden="true" tabindex="-1"></a>clientes_seg <span class="sc">|&gt;</span> <span class="fu">count</span>(segmento)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 3 × 2
   segmento               n
@@ -3517,13 +3581,13 @@ NumWebVisitsMonth    0.23  0.34</code></pre>
 2 Caçador de ofertas   549
 3 Premium              825</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb116"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1" aria-hidden="true" tabindex="-1"></a><span class="co"># O perfil &quot;deitado&quot;: uma linha por variável e uma coluna por segmento (mais fácil de ler)</span></span>
-<span id="cb116-2"><a href="#cb116-2" aria-hidden="true" tabindex="-1"></a>perfil_segmentos <span class="sc">|&gt;</span></span>
-<span id="cb116-3"><a href="#cb116-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>grupo) <span class="sc">|&gt;</span></span>
-<span id="cb116-4"><a href="#cb116-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>segmento, <span class="at">names_to =</span> <span class="st">&quot;variavel&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;valor&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb116-5"><a href="#cb116-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="fu">round</span>(valor, <span class="dv">2</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb116-6"><a href="#cb116-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> segmento, <span class="at">values_from =</span> valor) <span class="sc">|&gt;</span></span>
-<span id="cb116-7"><a href="#cb116-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>()</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb128"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a><span class="co"># O perfil &quot;deitado&quot;: uma linha por variável e uma coluna por segmento (mais fácil de ler)</span></span>
+<span id="cb128-2"><a href="#cb128-2" aria-hidden="true" tabindex="-1"></a>perfil_segmentos <span class="sc">|&gt;</span></span>
+<span id="cb128-3"><a href="#cb128-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>grupo) <span class="sc">|&gt;</span></span>
+<span id="cb128-4"><a href="#cb128-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>segmento, <span class="at">names_to =</span> <span class="st">&quot;variavel&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;valor&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb128-5"><a href="#cb128-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">valor =</span> <span class="fu">round</span>(valor, <span class="dv">2</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb128-6"><a href="#cb128-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> segmento, <span class="at">values_from =</span> valor) <span class="sc">|&gt;</span></span>
+<span id="cb128-7"><a href="#cb128-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as.data.frame</span>()</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                    variavel Econômico Caçador de ofertas  Premium
 1                          n    838.00             549.00   825.00
@@ -3560,22 +3624,22 @@ NumWebVisitsMonth    0.23  0.34</code></pre>
 <h2 class="anchored" data-anchor-id="gráfico-de-perfil">Gráfico de perfil</h2>
 <p>Um <strong>mapa de calor</strong> resume o perfil nas 15 variáveis do agrupamento. Cada casa mostra a <strong>média padronizada</strong> do segmento: 0 é a média da base, valores positivos (azul) estão acima da média e negativos (vermelho), abaixo, medidos em desvios-padrão. Lembre que, nos gastos (<code>Mnt*</code>), a padronização foi feita depois do log.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Médias das variáveis padronizadas (dados_pad) dentro de cada segmento</span></span>
-<span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a>medias_pad <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(dados_pad) <span class="sc">|&gt;</span></span>
-<span id="cb118-3"><a href="#cb118-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">segmento =</span> clientes_seg<span class="sc">$</span>segmento) <span class="sc">|&gt;</span></span>
-<span id="cb118-4"><a href="#cb118-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(segmento) <span class="sc">|&gt;</span></span>
-<span id="cb118-5"><a href="#cb118-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), mean)) <span class="sc">|&gt;</span></span>
-<span id="cb118-6"><a href="#cb118-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># formato longo: uma linha por segmento e variável</span></span>
-<span id="cb118-7"><a href="#cb118-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>segmento, <span class="at">names_to =</span> <span class="st">&quot;variavel&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;media_padronizada&quot;</span>)</span>
-<span id="cb118-8"><a href="#cb118-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb118-9"><a href="#cb118-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Mapa de calor: cor = média padronizada; o número dentro de cada casa é o valor</span></span>
-<span id="cb118-10"><a href="#cb118-10" aria-hidden="true" tabindex="-1"></a>medias_pad <span class="sc">|&gt;</span></span>
-<span id="cb118-11"><a href="#cb118-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> segmento, <span class="at">y =</span> variavel, <span class="at">fill =</span> media_padronizada)) <span class="sc">+</span></span>
-<span id="cb118-12"><a href="#cb118-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>) <span class="sc">+</span></span>
-<span id="cb118-13"><a href="#cb118-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(media_padronizada, <span class="dv">1</span>)), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb118-14"><a href="#cb118-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># vermelho = abaixo da média, branco = na média, azul = acima da média</span></span>
-<span id="cb118-15"><a href="#cb118-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">&quot;firebrick&quot;</span>, <span class="at">mid =</span> <span class="st">&quot;white&quot;</span>, <span class="at">high =</span> <span class="st">&quot;steelblue&quot;</span>, <span class="at">midpoint =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
-<span id="cb118-16"><a href="#cb118-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Segmento&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="st">&quot;Média</span><span class="sc">\n</span><span class="st">padronizada&quot;</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb130"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb130-1"><a href="#cb130-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Médias das variáveis padronizadas (dados_pad) dentro de cada segmento</span></span>
+<span id="cb130-2"><a href="#cb130-2" aria-hidden="true" tabindex="-1"></a>medias_pad <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(dados_pad) <span class="sc">|&gt;</span></span>
+<span id="cb130-3"><a href="#cb130-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">segmento =</span> clientes_seg<span class="sc">$</span>segmento) <span class="sc">|&gt;</span></span>
+<span id="cb130-4"><a href="#cb130-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(segmento) <span class="sc">|&gt;</span></span>
+<span id="cb130-5"><a href="#cb130-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), mean)) <span class="sc">|&gt;</span></span>
+<span id="cb130-6"><a href="#cb130-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># formato longo: uma linha por segmento e variável</span></span>
+<span id="cb130-7"><a href="#cb130-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>segmento, <span class="at">names_to =</span> <span class="st">&quot;variavel&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;media_padronizada&quot;</span>)</span>
+<span id="cb130-8"><a href="#cb130-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb130-9"><a href="#cb130-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Mapa de calor: cor = média padronizada; o número dentro de cada casa é o valor</span></span>
+<span id="cb130-10"><a href="#cb130-10" aria-hidden="true" tabindex="-1"></a>medias_pad <span class="sc">|&gt;</span></span>
+<span id="cb130-11"><a href="#cb130-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> segmento, <span class="at">y =</span> variavel, <span class="at">fill =</span> media_padronizada)) <span class="sc">+</span></span>
+<span id="cb130-12"><a href="#cb130-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>(<span class="at">color =</span> <span class="st">&quot;white&quot;</span>) <span class="sc">+</span></span>
+<span id="cb130-13"><a href="#cb130-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(media_padronizada, <span class="dv">1</span>)), <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb130-14"><a href="#cb130-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># vermelho = abaixo da média, branco = na média, azul = acima da média</span></span>
+<span id="cb130-15"><a href="#cb130-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient2</span>(<span class="at">low =</span> <span class="st">&quot;firebrick&quot;</span>, <span class="at">mid =</span> <span class="st">&quot;white&quot;</span>, <span class="at">high =</span> <span class="st">&quot;steelblue&quot;</span>, <span class="at">midpoint =</span> <span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb130-16"><a href="#cb130-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Segmento&quot;</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="st">&quot;Média</span><span class="sc">\n</span><span class="st">padronizada&quot;</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -3591,45 +3655,45 @@ NumWebVisitsMonth    0.23  0.34</code></pre>
 <h2 class="anchored" data-anchor-id="as-fichas-de-segmento">As fichas de segmento</h2>
 <p>Esta é a <strong>entrega para o marketing</strong>: uma ficha por segmento, com o perfil em linguagem de negócio e uma ação sugerida. Os números do perfil saem direto de <code>perfil_segmentos</code> (se os dados mudarem, as fichas mudam junto). As frases e as ações foram escritas a partir do perfil que acabamos de ver, na mesma ordem dos nomes (do menor para o maior gasto). Atenção: essas descrições (e o próprio nome “Caçador de ofertas”) valem <strong>para estes dados</strong>; se os dados, as variáveis ou a técnica mudarem, elas precisam ser <strong>revistas</strong> à luz do novo perfil, porque a regra de ordem só garante quem gasta mais ou menos, e não o resto da descrição.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Função auxiliar: número no formato brasileiro (ponto no milhar, vírgula decimal)</span></span>
-<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">casas =</span> <span class="dv">0</span>) {</span>
-<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> casas, <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>, <span class="at">decimal.mark =</span> <span class="st">&quot;,&quot;</span>)</span>
-<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb119-6"><a href="#cb119-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Atalho para não repetir &quot;perfil_segmentos$&quot; (as linhas estão em ordem crescente de gasto)</span></span>
-<span id="cb119-7"><a href="#cb119-7" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> perfil_segmentos</span>
-<span id="cb119-8"><a href="#cb119-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb119-9"><a href="#cb119-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Resumo em palavras de cada segmento, na ordem: Econômico, Caçador de ofertas, Premium</span></span>
-<span id="cb119-10"><a href="#cb119-10" aria-hidden="true" tabindex="-1"></a>resumos <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb119-11"><a href="#cb119-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Renda mais baixa e gasto muito baixo; famílias com crianças pequenas; visita bastante o site, mas compra pouco.&quot;</span>,</span>
-<span id="cb119-12"><a href="#cb119-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Renda intermediária; o grupo que mais compra com desconto; compra bastante pelo site; famílias com adolescentes.&quot;</span>,</span>
-<span id="cb119-13"><a href="#cb119-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Renda alta e o maior gasto, puxado por vinhos e carnes; a maioria sem filhos em casa; compra na loja e pelo catálogo e usa pouco desconto.&quot;</span>)</span>
-<span id="cb119-14"><a href="#cb119-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb119-15"><a href="#cb119-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Ação de marketing sugerida para cada segmento, na mesma ordem</span></span>
-<span id="cb119-16"><a href="#cb119-16" aria-hidden="true" tabindex="-1"></a>acoes <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb119-17"><a href="#cb119-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Canais baratos (e-mail, site): ofertas de entrada em itens básicos e infantis e um cupom para a primeira compra online, para transformar as muitas visitas ao site em compras. Evitar catálogo impresso, caro para quem gasta pouco.&quot;</span>,</span>
-<span id="cb119-18"><a href="#cb119-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Promoções e programa de pontos: combos para a família (vinho + carne) com desconto progressivo e ofertas relâmpago no site. Objetivo: aumentar o valor de cada compra sem depender só de desconto.&quot;</span>,</span>
-<span id="cb119-19"><a href="#cb119-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Relacionamento e exclusividade, não desconto: catálogo de vinhos e carnes selecionados, pré-lançamentos e degustações na loja. Objetivo: reter estes clientes, que geram a maior parte da receita.&quot;</span>)</span>
-<span id="cb119-20"><a href="#cb119-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb119-21"><a href="#cb119-21" aria-hidden="true" tabindex="-1"></a><span class="co"># As fichas: segmento, perfil (resumo + números do perfil real) e ação</span></span>
-<span id="cb119-22"><a href="#cb119-22" aria-hidden="true" tabindex="-1"></a><span class="co"># (sprintf() encaixa cada número, na ordem, no lugar de um %s do texto; %% vira o símbolo %)</span></span>
-<span id="cb119-23"><a href="#cb119-23" aria-hidden="true" tabindex="-1"></a>fichas <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb119-24"><a href="#cb119-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">segmento =</span> p<span class="sc">$</span>segmento,</span>
-<span id="cb119-25"><a href="#cb119-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">perfil =</span> <span class="fu">paste</span>(resumos,</span>
-<span id="cb119-26"><a href="#cb119-26" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sprintf</span>(<span class="st">&quot;%s clientes (%s%% do gasto total); renda média de %s; gasto médio de %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.&quot;</span>,</span>
-<span id="cb119-27"><a href="#cb119-27" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>n), <span class="fu">fmt</span>(p<span class="sc">$</span>Receita_pct), <span class="fu">fmt</span>(p<span class="sc">$</span>Income_medio),</span>
-<span id="cb119-28"><a href="#cb119-28" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>Gasto_total_medio), <span class="fu">fmt</span>(p<span class="sc">$</span>Compras_total_medio, <span class="dv">1</span>),</span>
-<span id="cb119-29"><a href="#cb119-29" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>Filhos_medio, <span class="dv">2</span>), <span class="fu">fmt</span>(p<span class="sc">$</span>NumDealsPurchases_medio, <span class="dv">1</span>),</span>
-<span id="cb119-30"><a href="#cb119-30" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>NumWebVisitsMonth_medio, <span class="dv">1</span>))),</span>
-<span id="cb119-31"><a href="#cb119-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">acao =</span> acoes)</span>
-<span id="cb119-32"><a href="#cb119-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb119-33"><a href="#cb119-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Mostrando cada ficha (strwrap quebra o texto longo em linhas de até 80 caracteres)</span></span>
-<span id="cb119-34"><a href="#cb119-34" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(fichas))) {</span>
-<span id="cb119-35"><a href="#cb119-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;==== Segmento:&quot;</span>, <span class="fu">as.character</span>(fichas<span class="sc">$</span>segmento[i]), <span class="st">&quot;====</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb119-36"><a href="#cb119-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;PERFIL:&quot;</span>, <span class="fu">strwrap</span>(fichas<span class="sc">$</span>perfil[i], <span class="dv">80</span>), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb119-37"><a href="#cb119-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;AÇÃO:&quot;</span>, <span class="fu">strwrap</span>(fichas<span class="sc">$</span>acao[i], <span class="dv">80</span>), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb119-38"><a href="#cb119-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb119-39"><a href="#cb119-39" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb131"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb131-1"><a href="#cb131-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Função auxiliar: número no formato brasileiro (ponto no milhar, vírgula decimal)</span></span>
+<span id="cb131-2"><a href="#cb131-2" aria-hidden="true" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">casas =</span> <span class="dv">0</span>) {</span>
+<span id="cb131-3"><a href="#cb131-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> casas, <span class="at">big.mark =</span> <span class="st">&quot;.&quot;</span>, <span class="at">decimal.mark =</span> <span class="st">&quot;,&quot;</span>)</span>
+<span id="cb131-4"><a href="#cb131-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb131-5"><a href="#cb131-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-6"><a href="#cb131-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Atalho para não repetir &quot;perfil_segmentos$&quot; (as linhas estão em ordem crescente de gasto)</span></span>
+<span id="cb131-7"><a href="#cb131-7" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> perfil_segmentos</span>
+<span id="cb131-8"><a href="#cb131-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-9"><a href="#cb131-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Resumo em palavras de cada segmento, na ordem: Econômico, Caçador de ofertas, Premium</span></span>
+<span id="cb131-10"><a href="#cb131-10" aria-hidden="true" tabindex="-1"></a>resumos <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb131-11"><a href="#cb131-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Renda mais baixa e gasto muito baixo; famílias com crianças pequenas; visita bastante o site, mas compra pouco.&quot;</span>,</span>
+<span id="cb131-12"><a href="#cb131-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Renda intermediária; o grupo que mais compra com desconto; compra bastante pelo site; famílias com adolescentes.&quot;</span>,</span>
+<span id="cb131-13"><a href="#cb131-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Renda alta e o maior gasto, puxado por vinhos e carnes; a maioria sem filhos em casa; compra na loja e pelo catálogo e usa pouco desconto.&quot;</span>)</span>
+<span id="cb131-14"><a href="#cb131-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-15"><a href="#cb131-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Ação de marketing sugerida para cada segmento, na mesma ordem</span></span>
+<span id="cb131-16"><a href="#cb131-16" aria-hidden="true" tabindex="-1"></a>acoes <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb131-17"><a href="#cb131-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Canais baratos (e-mail, site): ofertas de entrada em itens básicos e infantis e um cupom para a primeira compra online, para transformar as muitas visitas ao site em compras. Evitar catálogo impresso, caro para quem gasta pouco.&quot;</span>,</span>
+<span id="cb131-18"><a href="#cb131-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Promoções e programa de pontos: combos para a família (vinho + carne) com desconto progressivo e ofertas relâmpago no site. Objetivo: aumentar o valor de cada compra sem depender só de desconto.&quot;</span>,</span>
+<span id="cb131-19"><a href="#cb131-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">&quot;Relacionamento e exclusividade, não desconto: catálogo de vinhos e carnes selecionados, pré-lançamentos e degustações na loja. Objetivo: reter estes clientes, que geram a maior parte da receita.&quot;</span>)</span>
+<span id="cb131-20"><a href="#cb131-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-21"><a href="#cb131-21" aria-hidden="true" tabindex="-1"></a><span class="co"># As fichas: segmento, perfil (resumo + números do perfil real) e ação</span></span>
+<span id="cb131-22"><a href="#cb131-22" aria-hidden="true" tabindex="-1"></a><span class="co"># (sprintf() encaixa cada número, na ordem, no lugar de um %s do texto; %% vira o símbolo %)</span></span>
+<span id="cb131-23"><a href="#cb131-23" aria-hidden="true" tabindex="-1"></a>fichas <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb131-24"><a href="#cb131-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">segmento =</span> p<span class="sc">$</span>segmento,</span>
+<span id="cb131-25"><a href="#cb131-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">perfil =</span> <span class="fu">paste</span>(resumos,</span>
+<span id="cb131-26"><a href="#cb131-26" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sprintf</span>(<span class="st">&quot;%s clientes (%s%% do gasto total); renda média de %s; gasto médio de %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.&quot;</span>,</span>
+<span id="cb131-27"><a href="#cb131-27" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>n), <span class="fu">fmt</span>(p<span class="sc">$</span>Receita_pct), <span class="fu">fmt</span>(p<span class="sc">$</span>Income_medio),</span>
+<span id="cb131-28"><a href="#cb131-28" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>Gasto_total_medio), <span class="fu">fmt</span>(p<span class="sc">$</span>Compras_total_medio, <span class="dv">1</span>),</span>
+<span id="cb131-29"><a href="#cb131-29" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>Filhos_medio, <span class="dv">2</span>), <span class="fu">fmt</span>(p<span class="sc">$</span>NumDealsPurchases_medio, <span class="dv">1</span>),</span>
+<span id="cb131-30"><a href="#cb131-30" aria-hidden="true" tabindex="-1"></a>                         <span class="fu">fmt</span>(p<span class="sc">$</span>NumWebVisitsMonth_medio, <span class="dv">1</span>))),</span>
+<span id="cb131-31"><a href="#cb131-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">acao =</span> acoes)</span>
+<span id="cb131-32"><a href="#cb131-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb131-33"><a href="#cb131-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Mostrando cada ficha (strwrap quebra o texto longo em linhas de até 80 caracteres)</span></span>
+<span id="cb131-34"><a href="#cb131-34" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(fichas))) {</span>
+<span id="cb131-35"><a href="#cb131-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;==== Segmento:&quot;</span>, <span class="fu">as.character</span>(fichas<span class="sc">$</span>segmento[i]), <span class="st">&quot;====</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb131-36"><a href="#cb131-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;PERFIL:&quot;</span>, <span class="fu">strwrap</span>(fichas<span class="sc">$</span>perfil[i], <span class="dv">80</span>), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb131-37"><a href="#cb131-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;AÇÃO:&quot;</span>, <span class="fu">strwrap</span>(fichas<span class="sc">$</span>acao[i], <span class="dv">80</span>), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb131-38"><a href="#cb131-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb131-39"><a href="#cb131-39" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>==== Segmento: Econômico ====
 PERFIL:
@@ -3671,19 +3735,19 @@ clientes, que geram a maior parte da receita.</code></pre>
 <h2 class="anchored" data-anchor-id="os-clientes-exemplo-de-cada-segmento">Os clientes-exemplo de cada segmento</h2>
 <p>Uma tabela de médias é útil, mas o marketing entende melhor <strong>uma pessoa</strong>: “este é o cliente típico do segmento”. Para cada segmento, escolhemos o <strong>cliente mais parecido com o perfil médio do grupo</strong>: calculamos a média de cada uma das 15 variáveis padronizadas dentro do segmento (o “cliente médio”, que não existe de verdade) e procuramos o cliente real <strong>mais perto</strong> dessa média, com a mesma distância euclidiana de sempre. É a mesma conta dos “vizinhos mais próximos” da seção 3.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Para cada segmento: a linha da base do cliente mais perto do perfil médio do segmento</span></span>
-<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>posicao_exemplo <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">levels</span>(clientes_seg<span class="sc">$</span>segmento), <span class="cf">function</span>(s) {</span>
-<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a>  linhas <span class="ot">&lt;-</span> <span class="fu">which</span>(clientes_seg<span class="sc">$</span>segmento <span class="sc">==</span> s)        <span class="co"># clientes deste segmento</span></span>
-<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a>  media <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(dados_pad[linhas, ])             <span class="co"># perfil médio (variáveis padronizadas)</span></span>
-<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a>  dif <span class="ot">&lt;-</span> <span class="fu">sweep</span>(dados_pad[linhas, ], <span class="dv">2</span>, media)        <span class="co"># diferença de cada cliente até a média</span></span>
-<span id="cb121-6"><a href="#cb121-6" aria-hidden="true" tabindex="-1"></a>  linhas[<span class="fu">which.min</span>(<span class="fu">sqrt</span>(<span class="fu">rowSums</span>(dif<span class="sc">^</span><span class="dv">2</span>)))]            <span class="co"># o cliente com a menor distância</span></span>
-<span id="cb121-7"><a href="#cb121-7" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb121-8"><a href="#cb121-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb121-9"><a href="#cb121-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Os clientes-exemplo, com algumas variáveis fáceis de interpretar</span></span>
-<span id="cb121-10"><a href="#cb121-10" aria-hidden="true" tabindex="-1"></a>clientes_exemplo <span class="ot">&lt;-</span> clientes_seg[posicao_exemplo, ] <span class="sc">|&gt;</span></span>
-<span id="cb121-11"><a href="#cb121-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(segmento, ID, Income, Idade, Filhos, Gasto_total, Compras_total,</span>
-<span id="cb121-12"><a href="#cb121-12" aria-hidden="true" tabindex="-1"></a>         NumDealsPurchases, NumWebPurchases, NumWebVisitsMonth)</span>
-<span id="cb121-13"><a href="#cb121-13" aria-hidden="true" tabindex="-1"></a><span class="fu">as.data.frame</span>(clientes_exemplo)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Para cada segmento: a linha da base do cliente mais perto do perfil médio do segmento</span></span>
+<span id="cb133-2"><a href="#cb133-2" aria-hidden="true" tabindex="-1"></a>posicao_exemplo <span class="ot">&lt;-</span> <span class="fu">sapply</span>(<span class="fu">levels</span>(clientes_seg<span class="sc">$</span>segmento), <span class="cf">function</span>(s) {</span>
+<span id="cb133-3"><a href="#cb133-3" aria-hidden="true" tabindex="-1"></a>  linhas <span class="ot">&lt;-</span> <span class="fu">which</span>(clientes_seg<span class="sc">$</span>segmento <span class="sc">==</span> s)        <span class="co"># clientes deste segmento</span></span>
+<span id="cb133-4"><a href="#cb133-4" aria-hidden="true" tabindex="-1"></a>  media <span class="ot">&lt;-</span> <span class="fu">colMeans</span>(dados_pad[linhas, ])             <span class="co"># perfil médio (variáveis padronizadas)</span></span>
+<span id="cb133-5"><a href="#cb133-5" aria-hidden="true" tabindex="-1"></a>  dif <span class="ot">&lt;-</span> <span class="fu">sweep</span>(dados_pad[linhas, ], <span class="dv">2</span>, media)        <span class="co"># diferença de cada cliente até a média</span></span>
+<span id="cb133-6"><a href="#cb133-6" aria-hidden="true" tabindex="-1"></a>  linhas[<span class="fu">which.min</span>(<span class="fu">sqrt</span>(<span class="fu">rowSums</span>(dif<span class="sc">^</span><span class="dv">2</span>)))]            <span class="co"># o cliente com a menor distância</span></span>
+<span id="cb133-7"><a href="#cb133-7" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb133-8"><a href="#cb133-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb133-9"><a href="#cb133-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Os clientes-exemplo, com algumas variáveis fáceis de interpretar</span></span>
+<span id="cb133-10"><a href="#cb133-10" aria-hidden="true" tabindex="-1"></a>clientes_exemplo <span class="ot">&lt;-</span> clientes_seg[posicao_exemplo, ] <span class="sc">|&gt;</span></span>
+<span id="cb133-11"><a href="#cb133-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(segmento, ID, Income, Idade, Filhos, Gasto_total, Compras_total,</span>
+<span id="cb133-12"><a href="#cb133-12" aria-hidden="true" tabindex="-1"></a>         NumDealsPurchases, NumWebPurchases, NumWebVisitsMonth)</span>
+<span id="cb133-13"><a href="#cb133-13" aria-hidden="true" tabindex="-1"></a><span class="fu">as.data.frame</span>(clientes_exemplo)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>            segmento    ID Income Idade Filhos Gasto_total Compras_total
 1          Econômico  5267  33986    44      1          44             4
@@ -3707,16 +3771,16 @@ clientes, que geram a maior parte da receita.</code></pre>
 <p>Até aqui, os segmentos foram formados <strong>sem olhar</strong> para as campanhas: <code>AcceptedCmp1</code> a <code>5</code> e <code>Response</code> ficaram de fora da clusterização (seção 3). Por isso podemos usá-las agora como uma <strong>validação externa</strong>: um teste com informação que <strong>o algoritmo não viu</strong>. Se os segmentos respondem de forma bem diferente às campanhas, é um sinal de que eles capturam algo real sobre o comportamento dos clientes, e não só “ruído” das 15 variáveis.</p>
 <p>Atenção: isto é só uma <strong>conferência</strong>. As taxas de resposta <strong>não entraram</strong> na formação dos grupos, nem devem entrar: se entrassem, a validação seria circular (o grupo “responde mais” porque foi montado com quem respondeu).</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Taxas de aceite de campanhas em cada segmento</span></span>
-<span id="cb123-2"><a href="#cb123-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Response = aceitou a última campanha (0 ou 1); a média de 0/1 é a proporção de &quot;sim&quot;</span></span>
-<span id="cb123-3"><a href="#cb123-3" aria-hidden="true" tabindex="-1"></a>resposta_por_segmento <span class="ot">&lt;-</span> clientes_seg <span class="sc">|&gt;</span></span>
-<span id="cb123-4"><a href="#cb123-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(segmento) <span class="sc">|&gt;</span></span>
-<span id="cb123-5"><a href="#cb123-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
-<span id="cb123-6"><a href="#cb123-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">taxa_resposta =</span> <span class="fu">mean</span>(Response),</span>
-<span id="cb123-7"><a href="#cb123-7" aria-hidden="true" tabindex="-1"></a>            <span class="co"># aceitou ALGUMA das 6 campanhas (as 5 anteriores ou a última)?</span></span>
-<span id="cb123-8"><a href="#cb123-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">taxa_alguma_campanha =</span> <span class="fu">mean</span>(AcceptedCmp1 <span class="sc">+</span> AcceptedCmp2 <span class="sc">+</span> AcceptedCmp3 <span class="sc">+</span></span>
-<span id="cb123-9"><a href="#cb123-9" aria-hidden="true" tabindex="-1"></a>                                          AcceptedCmp4 <span class="sc">+</span> AcceptedCmp5 <span class="sc">+</span> Response <span class="sc">&gt;</span> <span class="dv">0</span>))</span>
-<span id="cb123-10"><a href="#cb123-10" aria-hidden="true" tabindex="-1"></a>resposta_por_segmento</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Taxas de aceite de campanhas em cada segmento</span></span>
+<span id="cb135-2"><a href="#cb135-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Response = aceitou a última campanha (0 ou 1); a média de 0/1 é a proporção de &quot;sim&quot;</span></span>
+<span id="cb135-3"><a href="#cb135-3" aria-hidden="true" tabindex="-1"></a>resposta_por_segmento <span class="ot">&lt;-</span> clientes_seg <span class="sc">|&gt;</span></span>
+<span id="cb135-4"><a href="#cb135-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(segmento) <span class="sc">|&gt;</span></span>
+<span id="cb135-5"><a href="#cb135-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb135-6"><a href="#cb135-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">taxa_resposta =</span> <span class="fu">mean</span>(Response),</span>
+<span id="cb135-7"><a href="#cb135-7" aria-hidden="true" tabindex="-1"></a>            <span class="co"># aceitou ALGUMA das 6 campanhas (as 5 anteriores ou a última)?</span></span>
+<span id="cb135-8"><a href="#cb135-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">taxa_alguma_campanha =</span> <span class="fu">mean</span>(AcceptedCmp1 <span class="sc">+</span> AcceptedCmp2 <span class="sc">+</span> AcceptedCmp3 <span class="sc">+</span></span>
+<span id="cb135-9"><a href="#cb135-9" aria-hidden="true" tabindex="-1"></a>                                          AcceptedCmp4 <span class="sc">+</span> AcceptedCmp5 <span class="sc">+</span> Response <span class="sc">&gt;</span> <span class="dv">0</span>))</span>
+<span id="cb135-10"><a href="#cb135-10" aria-hidden="true" tabindex="-1"></a>resposta_por_segmento</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 3 × 4
   segmento               n taxa_resposta taxa_alguma_campanha
@@ -3725,22 +3789,22 @@ clientes, que geram a maior parte da receita.</code></pre>
 2 Caçador de ofertas   549        0.138                 0.290
 3 Premium              825        0.221                 0.395</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb125"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Para comparar: taxa de resposta na base inteira</span></span>
-<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(clientes_seg<span class="sc">$</span>Response)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Para comparar: taxa de resposta na base inteira</span></span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(clientes_seg<span class="sc">$</span>Response)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.1505425</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb127"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb127-1"><a href="#cb127-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de barras com as duas taxas lado a lado, por segmento</span></span>
-<span id="cb127-2"><a href="#cb127-2" aria-hidden="true" tabindex="-1"></a>resposta_por_segmento <span class="sc">|&gt;</span></span>
-<span id="cb127-3"><a href="#cb127-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(taxa_resposta, taxa_alguma_campanha),</span>
-<span id="cb127-4"><a href="#cb127-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;taxa&quot;</span>) <span class="sc">|&gt;</span></span>
-<span id="cb127-5"><a href="#cb127-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">medida =</span> <span class="fu">if_else</span>(medida <span class="sc">==</span> <span class="st">&quot;taxa_resposta&quot;</span>,</span>
-<span id="cb127-6"><a href="#cb127-6" aria-hidden="true" tabindex="-1"></a>                          <span class="st">&quot;Aceitou a última campanha&quot;</span>, <span class="st">&quot;Aceitou alguma campanha&quot;</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb127-7"><a href="#cb127-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> segmento, <span class="at">y =</span> taxa, <span class="at">fill =</span> medida)) <span class="sc">+</span></span>
-<span id="cb127-8"><a href="#cb127-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="st">&quot;dodge&quot;</span>) <span class="sc">+</span></span>
-<span id="cb127-9"><a href="#cb127-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># eixo y em porcentagem (scales vem junto com o tidyverse)</span></span>
-<span id="cb127-10"><a href="#cb127-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>percent) <span class="sc">+</span></span>
-<span id="cb127-11"><a href="#cb127-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Segmento&quot;</span>, <span class="at">y =</span> <span class="st">&quot;Proporção de clientes&quot;</span>, <span class="at">fill =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gráfico de barras com as duas taxas lado a lado, por segmento</span></span>
+<span id="cb139-2"><a href="#cb139-2" aria-hidden="true" tabindex="-1"></a>resposta_por_segmento <span class="sc">|&gt;</span></span>
+<span id="cb139-3"><a href="#cb139-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="fu">c</span>(taxa_resposta, taxa_alguma_campanha),</span>
+<span id="cb139-4"><a href="#cb139-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">names_to =</span> <span class="st">&quot;medida&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;taxa&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb139-5"><a href="#cb139-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">medida =</span> <span class="fu">if_else</span>(medida <span class="sc">==</span> <span class="st">&quot;taxa_resposta&quot;</span>,</span>
+<span id="cb139-6"><a href="#cb139-6" aria-hidden="true" tabindex="-1"></a>                          <span class="st">&quot;Aceitou a última campanha&quot;</span>, <span class="st">&quot;Aceitou alguma campanha&quot;</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb139-7"><a href="#cb139-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> segmento, <span class="at">y =</span> taxa, <span class="at">fill =</span> medida)) <span class="sc">+</span></span>
+<span id="cb139-8"><a href="#cb139-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="st">&quot;dodge&quot;</span>) <span class="sc">+</span></span>
+<span id="cb139-9"><a href="#cb139-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># eixo y em porcentagem (scales vem junto com o tidyverse)</span></span>
+<span id="cb139-10"><a href="#cb139-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>percent) <span class="sc">+</span></span>
+<span id="cb139-11"><a href="#cb139-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Segmento&quot;</span>, <span class="at">y =</span> <span class="st">&quot;Proporção de clientes&quot;</span>, <span class="at">fill =</span> <span class="cn">NULL</span>)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">

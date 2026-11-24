@@ -347,9 +347,7 @@ plot(hc_ward, labels = FALSE, hang = -1,
      ylab = "Altura da fusão")
 rect.hclust(hc_ward, k = k_escolhido, border = c("firebrick", "steelblue", "darkgreen"))
 
-# 6b. Bônus: dados mistos e distância de Gower (pode pular) ----
-# ATENÇÃO: este bloco é OPCIONAL. Nenhuma seção seguinte usa objetos criados aqui.
-# Para pular, vá direto para a linha "# ---- fim do bônus 6b ----".
+# 5. Hierárquico com dados mistos: distância de Gower ----
 
 # Dados mistos: as 15 numéricas (já com log1p nos gastos) + 2 categóricas como factor
 dados_gower <- dados_cluster |>
@@ -395,6 +393,29 @@ mean(c(parcela_num, parcela_cat))
 
 # O valor calculado pela daisy() para o mesmo par (linha 1, coluna 3)
 as.matrix(dist_gower)[1, 3]
+
+# Hierárquico com a matriz de Gower: ligação média (average) e completa (complete)
+hc_gower_average  <- hclust(dist_gower, method = "average")
+hc_gower_complete <- hclust(dist_gower, method = "complete")
+
+# Tamanhos dos grupos quando cortamos cada árvore em 3 grupos
+table(cutree(hc_gower_average, k = 3))
+table(cutree(hc_gower_complete, k = 3))
+
+# Cortando a árvore da complete (Gower) em 2 grupos
+grupos_gower <- cutree(hc_gower_complete, k = 2)
+
+# Tabela cruzada: grupos da Gower (linhas) × grupos do Ward euclidiano (colunas)
+table(gower = grupos_gower, ward = grupos_hc)
+
+# Ward euclidiano: gasto total médio de cada grupo (para saber quem gasta mais)
+tapply(clientes$Gasto_total, grupos_hc, mean) |> round()
+
+# Estado civil dentro de cada grupo da Gower
+table(gower = grupos_gower, estado_civil = clientes$Marital_Status)
+
+# Cortando a mesma árvore em 4 grupos: estado civil em cada grupo
+table(gower_4 = cutree(hc_gower_complete, k = 4), estado_civil = clientes$Marital_Status)
 
 # 6. Resultados para o negócio ----
 

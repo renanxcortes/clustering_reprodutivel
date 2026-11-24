@@ -85,3 +85,32 @@ test_that("simplificada: seções navegáveis", {
   l <- readLines(file.path(raiz, "aula_clustering_simplificada.R"), encoding = "UTF-8")
   expect_equal(sum(grepl("^# [1-6][.] .+ ----$", l)), 6L)
 })
+
+test_that("simplificada: Gower", {
+  n <- nrow(env_s$clientes)
+  expect_equal(attr(env_s$dist_gower, "Metric"), "mixed")
+  expect_equal(env_s$hc_gower_average$method, "average")
+  expect_equal(env_s$hc_gower_complete$method, "complete")
+  expect_gt(max(table(cutree(env_s$hc_gower_average, k = 3))) / n, 0.9)
+  expect_gt(min(table(env_s$grupos_gower)) / n, 0.2)
+  # a complete com Gower reencontra a divisão por gasto do Ward
+  seg <- as.character(env_s$clientes_seg$segmento)
+  dom <- function(s) {
+    t <- table(env_s$grupos_gower[seg == s])
+    list(grupo = names(which.max(t)), prop = max(t) / sum(t))
+  }
+  pr <- dom("Premium"); ec <- dom("Econômico")
+  expect_gt(pr$prop, 0.7); expect_gt(ec$prop, 0.7)
+  expect_false(pr$grupo == ec$grupo)
+  # com k = 4 surge um grupo só de "Sozinho"
+  g4 <- cutree(env_s$hc_gower_complete, k = 4)
+  expect_true(any(tapply(env_s$clientes$Marital_Status == "Sozinho", g4, all)))
+})
+
+test_that("simplificada: figuras citadas existem", {
+  txt <- paste(readLines(file.path(raiz, "aula_clustering_simplificada.qmd"), encoding = "UTF-8"), collapse = "\n")
+  figs <- unique(regmatches(txt, gregexpr("figuras/[A-Za-z0-9_]+[.](png|gif)", txt))[[1]])
+  expect_gte(length(figs), 4)
+  expect_false("figuras/kmeans_iteracoes.gif" %in% figs)
+  for (f in figs) expect_true(file.exists(file.path(raiz, f)), info = f)
+})

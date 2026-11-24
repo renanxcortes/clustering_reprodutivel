@@ -390,7 +390,7 @@ Que informações devem dizer "quem se parece com quem"? Vamos usar **15 variáv
 Ficam **de fora**:
 
 - **Campanhas e reclamações** (`AcceptedCmp1` a `5`, `Response`, `Complain`): queremos descobrir os grupos pelo **jeito de comprar** e só **depois** testar se eles respondem de forma diferente às campanhas. Se usássemos a resposta para formar os grupos, a validação seria circular.
-- **Variáveis categóricas** (`Education`, `Marital_Status`): a distância euclidiana (a "régua" que usaremos) só funciona com números. Elas ficam para o bloco bônus (distância de Gower), que lida com dados mistos.
+- **Variáveis categóricas** (`Education`, `Marital_Status`): a distância euclidiana (a "régua" que usaremos) só funciona com números. Elas ficam para a seção 5 (distância de Gower), que lida com dados mistos.
 - **Totais** (`Gasto_total`, `Compras_total`): são somas de variáveis que estão na lista, e incluí-los contaria o mesmo comportamento duas vezes. Eles servirão para **descrever** os segmentos depois.
 - **`Tempo_casa_dias`**: mede há quanto tempo a pessoa é cliente, e não o seu jeito de comprar nem o seu perfil. Também fica só para **descrever** os segmentos depois.
 
@@ -509,7 +509,7 @@ As 15 médias são 0 e os 15 desvios-padrão são 1, como esperado. A matriz `da
 
 # 4. Cluster hierárquico
 
-Agora sim vamos agrupar. Todas as técnicas desta aula partem da mesma pergunta: **quão longe um cliente está do outro?** Clientes "perto" devem cair no mesmo grupo; clientes "longe", em grupos diferentes.
+Agora sim vamos agrupar. Tudo o que faremos parte da mesma pergunta: **quão longe um cliente está do outro?** Clientes "perto" devem cair no mesmo grupo; clientes "longe", em grupos diferentes.
 
 ## Distância entre clientes e a matriz de distâncias
 
@@ -624,7 +624,7 @@ table(cutree(hc_complete, k = 3))
 table(cutree(hc_average, k = 3))
 ```
 
-O resultado é decepcionante. Com a single, os grupos têm **2.208**, **3** e **1** cliente; com a complete, **2.199**, **9** e **4**; com a average, **2.205**, **4** e **3**. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam poucos clientes (de 4 a 13) muito diferentes dos demais. O motivo é que esta base **não tem grupos bem separados**: os clientes formam um contínuo, sem "vazios" entre eles (voltaremos a isso na seção 5). A single sofre com o **encadeamento**: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando "grupos" quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.
+O resultado é decepcionante. Com a single, os grupos têm **2.208**, **3** e **1** cliente; com a complete, **2.199**, **9** e **4**; com a average, **2.205**, **4** e **3**. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam poucos clientes (de 4 a 13) muito diferentes dos demais. O motivo é que esta base **não tem grupos bem separados**: os clientes formam um contínuo, sem "vazios" entre eles (veremos isso no mapa da seção 6). A single sofre com o **encadeamento**: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando "grupos" quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.
 
 ## A ligação de Ward
 
@@ -686,12 +686,7 @@ rect.hclust(hc_ward, k = k_escolhido, border = c("firebrick", "steelblue", "dark
 
 O corte em 3 grupos gera grupos de **825**, **838** e **549** clientes: nenhum grupo minúsculo, o que é bom para o marketing (não vale a pena criar uma campanha para 10 pessoas). Quem é cada grupo veremos na seção 6; antes, na seção 5, vamos ver o que muda quando as variáveis categóricas entram no agrupamento.
 
-# 6b. Bônus: dados mistos e distância de Gower (pode pular)
-
-::: {.callout-note}
-## Bloco bônus: pode pular
-Este bloco é **opcional**. Nada das seções 7 e 8 depende dele: se o tempo estiver curto, pule direto para a seção 7. No script `.R`, o bônus vai da linha `# 6b. Bônus ...` até a linha `# ---- fim do bônus 6b ----`.
-:::
+# 5. Hierárquico com dados mistos: distância de Gower
 
 ## Motivação: e as variáveis categóricas?
 
@@ -707,9 +702,7 @@ A Gower calcula uma **dissimilaridade** (uma medida de "o quão diferentes" dois
 Usamos as **mesmas 15 variáveis numéricas** da trilha principal, **com o `log1p()` nos gastos** (isto é, partimos de `dados_cluster`). O log importa aqui também: como a Gower divide pela amplitude, um único cliente com gasto enorme "esticaria" a amplitude, e as diferenças entre todos os outros clientes ficariam minúsculas. Às 15 numéricas, somamos `Education` e `Marital_Status` como **factor** (o tipo do R para variáveis categóricas). A função `daisy()` do pacote `cluster`, com `metric = "gower"`, calcula a matriz de dissimilaridades de uma só vez.
 
 ```{r}
-# 6b. Bônus: dados mistos e distância de Gower (pode pular) ----
-# ATENÇÃO: este bloco é OPCIONAL. Nenhuma seção seguinte usa objetos criados aqui.
-# Para pular, vá direto para a linha "# ---- fim do bônus 6b ----".
+# 5. Hierárquico com dados mistos: distância de Gower ----
 
 # Dados mistos: as 15 numéricas (já com log1p nos gastos) + 2 categóricas como factor
 dados_gower <- dados_cluster |>
@@ -765,7 +758,60 @@ mean(c(parcela_num, parcela_cat))
 as.matrix(dist_gower)[1, 3]
 ```
 
-As duas contas dão o mesmo valor, **0,1996** (cerca de 0,20): os dois clientes são bem parecidos. Repare nas parcelas: a de `Education` é **0** (mesma escolaridade) e a de `Marital_Status` é **1** (estado civil diferente). A maior parcela numérica é a de `NumStorePurchases` (**0,462**), menos da metade da parcela do estado civil. Uma única categórica diferente vale tanto quanto a **maior diferença possível** numa numérica (por exemplo, o cliente mais pobre contra o mais rico da base). Guarde essa observação: ela vai aparecer nos resultados.
+As duas contas dão o mesmo valor, **0,1996** (cerca de 0,20): os dois clientes são bem parecidos. Repare nas parcelas: a de `Education` é **0** (mesma escolaridade) e a de `Marital_Status` é **1** (estado civil diferente). A maior parcela numérica é a de `NumStorePurchases` (**0,462**), menos da metade da parcela do estado civil. Uma única categórica diferente vale tanto quanto a **maior diferença possível** numa numérica (por exemplo, o cliente mais pobre contra o mais rico da base). Guarde essa observação: ela vai reaparecer quando olharmos a árvore da Gower mais de perto.
+
+## A árvore com a Gower: average e complete
+
+Com a matriz de Gower, o cluster hierárquico funciona do mesmo jeito: ele só precisa das dissimilaridades entre os pares. Só trocamos a **régua**. Mas qual **regra de ligação** usar? O Ward foi pensado para a distância euclidiana (ele mede o espalhamento em volta do centro com médias e quadrados), e a Gower não é euclidiana. Então usamos as regras que só olham para as dissimilaridades entre pares de clientes, como a **average** e a **complete** da seção 4. (Existe uma adaptação do Ward para a Gower, mas ela fica fora desta aula.)
+
+```{r}
+# Hierárquico com a matriz de Gower: ligação média (average) e completa (complete)
+hc_gower_average  <- hclust(dist_gower, method = "average")
+hc_gower_complete <- hclust(dist_gower, method = "complete")
+
+# Tamanhos dos grupos quando cortamos cada árvore em 3 grupos
+table(cutree(hc_gower_average, k = 3))
+table(cutree(hc_gower_complete, k = 3))
+```
+
+A **average** repete o que vimos na base real com a distância euclidiana: o corte em 3 deixa **2.207 clientes num grupo só**, e os outros dois têm **4 clientes e 1 cliente**. A **complete** se sai melhor: divide a base em dois grandes grupos, de **1.357** e **851** clientes. O terceiro grupo tem só **4** clientes, então, para a complete, o corte que faz sentido é em **2 grupos**.
+
+## A régua mudou. Os grupos mudaram?
+
+Vamos cortar a árvore da complete em **2 grupos** e compará-los com os 3 grupos do Ward euclidiano da seção 4 (`grupos_hc`). Lembre que os números dos grupos são só rótulos: o "grupo 1" de uma árvore não tem nada a ver com o "grupo 1" da outra.
+
+```{r}
+# Cortando a árvore da complete (Gower) em 2 grupos
+grupos_gower <- cutree(hc_gower_complete, k = 2)
+
+# Tabela cruzada: grupos da Gower (linhas) × grupos do Ward euclidiano (colunas)
+table(gower = grupos_gower, ward = grupos_hc)
+
+# Ward euclidiano: gasto total médio de cada grupo (para saber quem gasta mais)
+tapply(clientes$Gasto_total, grupos_hc, mean) |> round()
+
+# Estado civil dentro de cada grupo da Gower
+table(gower = grupos_gower, estado_civil = clientes$Marital_Status)
+```
+
+Pelo gasto médio, o grupo 1 do Ward é o de **maior gasto** (1.217), o grupo 2 o de **menor gasto** (68) e o grupo 3 o intermediário (514). A tabela cruzada mostra que a Gower reencontrou essencialmente a mesma divisão:
+
+- o grupo 1 da Gower tem **821 dos 825** clientes do grupo de maior gasto;
+- o grupo 2 da Gower tem **731 dos 838** clientes do grupo de menor gasto;
+- os clientes do grupo intermediário se dividem entre os dois (429 e 120).
+
+E o estado civil **não** decidiu essa divisão: a proporção de casados é parecida nos dois grupos da Gower (852 de 1.357, cerca de **63%**, contra 576 de 855, cerca de **67%**). Mesmo com as duas categóricas na régua, quem separa os clientes, no primeiro corte da árvore, continua sendo **quanto eles gastam**.
+
+E o estado civil? Ele **pesa** na Gower (lembre da conta à mão: um estado civil diferente vale 1 inteiro), mas só aparece mais embaixo na árvore. Cortando em **4 grupos**:
+
+```{r}
+# Cortando a mesma árvore em 4 grupos: estado civil em cada grupo
+table(gower_4 = cutree(hc_gower_complete, k = 4), estado_civil = clientes$Marital_Status)
+```
+
+No corte em 4 aparece um grupo de **187 clientes, todos "Sozinho"**. É o efeito da conta à mão: como uma categórica diferente vale 1 inteiro na média, o estado civil acaba criando uma "fronteira" própria, mas só nos cortes mais baixos da árvore, depois que a divisão principal (pelo gasto) já foi feita.
+
+**Conclusão:** a régua mudou, mas a **estrutura principal se manteve**: com ou sem as categóricas, os clientes se separam primeiro pelo gasto. Isso nos dá mais confiança nos grupos da seção 4. Para entregar ao marketing, seguimos com os **3 grupos do Ward euclidiano**: eles usam só as variáveis de comportamento de compra e dividem a base em 3 grupos de tamanhos úteis. Incluir variáveis (como o estado civil) é sempre uma **escolha**, e o analista precisa olhar o resultado e perguntar se os grupos respondem à pergunta do negócio.
 
 # 6. Resultados para o negócio
 
