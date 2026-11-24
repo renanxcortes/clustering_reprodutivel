@@ -114,3 +114,10 @@ test_that("simplificada: figuras citadas existem", {
   expect_false("figuras/kmeans_iteracoes.gif" %in% figs)
   for (f in figs) expect_true(file.exists(file.path(raiz, f)), info = f)
 })
+
+test_that("README cita a versão simplificada", {
+  rd <- paste(readLines(file.path(raiz, "README.md"), encoding = "UTF-8"), collapse = "\n")
+  expect_match(rd, "## Versão simplificada")
+  expect_match(rd, "aula_clustering_simplificada")
+  expect_match(rd, "test_aula_simplificada")
+})

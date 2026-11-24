@@ -18,6 +18,16 @@ Somos a **equipe de dados de uma rede de varejo**. Hoje, toda campanha de market
 5. **Comparação das técnicas**: tabelas cruzadas (rótulos arbitrários) e silhueta média, e a escolha final pesando números e utilidade para o negócio.
 6. **Resultados para o negócio**: PCA para visualizar, perfil dos segmentos, nomes dados por regra (e não pelo número do grupo), **fichas de segmento** e uma validação externa com a aceitação das campanhas (que não entraram no agrupamento).
 
+## Versão simplificada
+
+`aula_clustering_simplificada` (`.qmd`, `.R` e `.html`) é uma segunda versão da aula, para turmas em que k-means, k-medoides (PAM) e silhueta seriam conceitos difíceis demais. Ela é **mais simples, não mais curta**: a descritiva, a preparação e o cluster hierárquico (bonequinhos, quatro ligações, Ward e dendrograma) são iguais aos da aula completa.
+
+- **Sai:** k-means, PAM, silhueta, cotovelo e a comparação das técnicas. O *k* = 3 é escolhido só pelas alturas do dendrograma.
+- **Seção 5, distância de Gower** (deixa de ser bônus): a conta à mão com as categóricas, o hierárquico com as ligações average (que falha de novo: 2.207 / 4 / 1) e complete. Cortada em 2 grupos, a complete reencontra a divisão por gasto do Ward (821 dos 825 clientes de maior gasto num grupo, 731 dos 838 de menor gasto no outro). O estado civil só decide um grupo no corte em 4 (187 clientes, todos "Sozinho"). Mensagem: a régua muda, a estrutura principal se mantém.
+- **Seção 6, resultados:** os segmentos são os **3 grupos do Ward euclidiano**: Econômico (838 clientes), Caçador de ofertas (549) e Premium (825). O cliente-exemplo de cada segmento é o **cliente mais parecido com o perfil médio do grupo** (no lugar do medoide). A aceitação da última campanha é **8,9%**, **13,8%** e **22,1%**.
+
+As duas aulas são arquivos independentes: uma correção nas partes comuns (descritiva, preparação, hierárquico) precisa ser feita nas duas.
+
 ## Os dados
 
 `marketing_campaign.csv` é a base *Customer Personality Analysis*, do Kaggle ([imakash3011/customer-personality-analysis](https://www.kaggle.com/datasets/imakash3011/customer-personality-analysis)). A cópia usada aqui foi baixada do espelho público `https://raw.githubusercontent.com/LiaoliaoQJ/mkt/main/marketing_campaign%202.csv` (MD5 `3b624fc2bdbe29fa5fb01bdd577f78cd`). São **2.240 clientes** e **29 colunas**. Apesar da extensão `.csv`, o arquivo é **separado por TAB**, por isso o script usa `read_tsv()`. A moeda não é informada na fonte, então os valores aparecem como "unidades monetárias". O arquivo já está na pasta: **nada é baixado durante a aula**.
@@ -51,11 +61,12 @@ As campanhas (`AcceptedCmp*`, `Response`) e `Complain` **não entram** no agrupa
 | `aula_clustering.html` | **Material de estudo**: o mesmo código com explicações e gráficos. Abre em qualquer navegador |
 | `aula_clustering.qmd` | **Fonte única** do material (Quarto). O `.R` e o `.html` são gerados a partir dele |
 | `marketing_campaign.csv` | Os dados |
-| `tools/build.R` | Gera o `.R` (via `knitr::purl`) e o `.html` (via Quarto) a partir do `.qmd` |
+| `tools/build.R` | Gera o `.R` (via `knitr::purl`) e o `.html` (via Quarto) de cada aula a partir do seu `.qmd` |
 | `tools/figuras.R` | Gera as figuras e o GIF de `figuras/` (rodar só quando mudar alguma figura) |
 | `tools/exemplo.R`, `tools/kmeans_passos.R` | Dados de exemplo e k-means passo a passo, usados pelo `figuras.R` |
 | `figuras/` | Figuras da aula (bonequinhos, ligações, GIF do k-means), já prontas |
-| `tests/test_aula.R`, `tests/test_figuras.R` | Testes automáticos do material |
+| `aula_clustering_simplificada.R`, `.html`, `.qmd` | A **versão simplificada** (só hierárquico, euclidiano e Gower): veja a seção acima |
+| `tests/test_aula.R`, `tests/test_aula_simplificada.R`, `tests/test_figuras.R` | Testes automáticos do material |
 
 ## Como rodar (alunos)
 
@@ -76,12 +87,13 @@ Requisitos: R ≥ 4.5. O script completo roda em alguns segundos.
 
 ## Como editar o material (professor)
 
-O `.qmd` é a fonte. **Não edite `aula_clustering.R` à mão**, porque ele é sobrescrito pelo build. Depois de alterar o `.qmd`, rode a partir desta pasta:
+Os `.qmd` são a fonte. **Não edite `aula_clustering.R` nem `aula_clustering_simplificada.R` à mão**, porque eles são sobrescritos pelo build. Depois de alterar um `.qmd`, rode a partir desta pasta:
 
 ```bash
-Rscript tools/build.R                                    # gera aula_clustering.R e aula_clustering.html
-Rscript -e 'testthat::test_file("tests/test_aula.R")'     # testes da aula
-Rscript -e 'testthat::test_file("tests/test_figuras.R")'  # testes do exemplo e das figuras
+Rscript tools/build.R                                                 # gera o .R e o .html das DUAS aulas
+Rscript -e 'testthat::test_file("tests/test_aula.R")'                  # testes da aula completa
+Rscript -e 'testthat::test_file("tests/test_aula_simplificada.R")'     # testes da versão simplificada
+Rscript -e 'testthat::test_file("tests/test_figuras.R")'               # testes do exemplo e das figuras
 ```
 
 O build usa o Quarto do PATH. Se ele não estiver no PATH, usa o Quarto que vem com o RStudio.
