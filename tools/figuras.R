@@ -290,3 +290,58 @@ fig4 <- (p1 | p2 | p3 | p4) / (dendro("single") | dendro("complete") | dendro("a
 salvar(fig4, "ligacoes_passos.png", largura = 15, altura = 9.5)
 
 cat("Figuras estáticas gravadas em figuras/\n")
+
+# ---- Figura 5: GIF das iterações do k-means ---------------------------------
+gif <- exemplo_gif()
+passos <- kmeans_passos(gif$x, gif$centros_iniciais)
+pontos <- data.frame(renda = gif$x[, 1], gasto = gif$x[, 2])
+lim_x <- range(c(pontos$renda, unlist(lapply(passos$centros, `[`, , 1)))) + c(-0.5, 0.5)
+lim_y <- range(c(pontos$gasto, unlist(lapply(passos$centros, `[`, , 2)))) + c(-0.5, 0.5)
+
+quadro <- function(titulo, centros, atrib = NULL, centros_antes = NULL) {
+  pts <- pontos
+  pts$cor <- if (is.null(atrib)) "grey60" else cores_grupos[atrib]
+  cen <- data.frame(renda = centros[, 1], gasto = centros[, 2], cor = cores_grupos)
+  p <- ggplot() +
+    geom_point(data = pts, aes(renda, gasto, colour = I(cor)), size = 3, alpha = 0.85)
+  if (!is.null(centros_antes)) {
+    setas <- data.frame(x = centros_antes[, 1], y = centros_antes[, 2],
+                        xend = centros[, 1], yend = centros[, 2], cor = cores_grupos)
+    p <- p +
+      geom_point(data = setas, aes(x, y, colour = I(cor)), shape = 4, size = 5, stroke = 1.2, alpha = 0.35) +
+      geom_segment(data = setas, aes(x = x, y = y, xend = xend, yend = yend, colour = I(cor)),
+                   linewidth = 1, arrow = arrow(length = unit(0.25, "cm"), type = "closed"))
+  }
+  p + geom_point(data = cen, aes(renda, gasto), shape = 4, size = 7, stroke = 3.2, colour = "white") +
+    geom_point(data = cen, aes(renda, gasto, colour = I(cor)), shape = 4, size = 6, stroke = 2.2) +
+    coord_equal(xlim = lim_x, ylim = lim_y) +
+    labs(title = titulo, subtitle = "pontos = clientes   ✕ = centro do grupo", x = "renda", y = "gasto") +
+    tema_plano() +
+    theme(plot.title = element_text(size = 15))
+}
+
+# Cada quadro aparece "repeticoes" vezes; com 0,6 s por quadro, 2 repetições = 1,2 s
+quadros <- list(list(quadro("Início: 3 clientes sorteados viram os centros", passos$centros[[1]]), 5))
+for (i in seq_len(passos$iter)) {
+  quadros <- c(quadros, list(
+    list(quadro(paste0("Iteração ", i, ": cada cliente vai para o centro mais próximo"),
+                passos$centros[[i]], passos$atribuicoes[[i]]), 2),
+    list(quadro(paste0("Iteração ", i, ": cada centro vai para a média do seu grupo"),
+                passos$centros[[i + 1]], passos$atribuicoes[[i]], passos$centros[[i]]), 2)))
+}
+quadros <- c(quadros, list(list(
+  quadro("Ninguém mudou de grupo: fim!", passos$centros[[passos$iter + 1]],
+         passos$atribuicoes[[passos$iter]]), 5)))
+
+pasta_quadros <- tempfile("quadros_kmeans")
+dir.create(pasta_quadros)
+arquivos <- character(0)
+for (j in seq_along(quadros)) {
+  f <- file.path(pasta_quadros, sprintf("q%03d.png", j))
+  ggsave(f, quadros[[j]][[1]], width = 7, height = 6, dpi = 90, bg = "white")
+  arquivos <- c(arquivos, rep(f, quadros[[j]][[2]]))
+}
+gifski::gifski(arquivos, gif_file = file.path("figuras", "kmeans_iteracoes.gif"),
+               width = 630, height = 540, delay = 0.6, loop = TRUE, progress = FALSE)
+unlink(pasta_quadros, recursive = TRUE)
+cat("GIF gravado em figuras/kmeans_iteracoes.gif\n")

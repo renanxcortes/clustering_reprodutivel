@@ -49,3 +49,9 @@ test_that("figuras estáticas existem", {
   for (f in c("distancia_dois_clientes", "matriz_distancias", "ligacoes_regra", "ligacoes_passos"))
     expect_true(file.exists(file.path(raiz, "figuras", paste0(f, ".png"))), info = f)
 })
+
+test_that("GIF do k-means existe e é leve", {
+  f <- file.path(raiz, "figuras", "kmeans_iteracoes.gif")
+  expect_true(file.exists(f))
+  expect_lte(file.size(f), 2 * 1024^2)
+})
