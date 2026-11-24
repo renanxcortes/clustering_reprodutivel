@@ -12,7 +12,7 @@ A turma nunca viu análise multivariada. Hoje a seção 4 explica a matriz de di
 
 ## Decisões já tomadas (pelo professor)
 
-- **Opção A para o hierárquico:** single, complete e average são ensinadas num exemplo pequeno, com figuras. Depois os alunos rodam as três na base real e veem que falham (um grupo gigante + poucos outliers). Isso motiva apresentar o **Ward por último**, como a ligação que mantém os grupos compactos. O Ward continua sendo o hierárquico usado no resto da aula (`hc_ward`, `grupos_hc`, `k_escolhido`, seção 7).
+- **Opção A para o hierárquico:** single, complete e average são ensinadas num exemplo pequeno, com figuras. **O Ward também entra no exemplo pequeno** (quarto painel nas figuras e quarto dendrograma no bloco dos alunos), para ter a mesma intuição visual que as outras. Depois os alunos rodam as três na base real e veem que falham (um grupo gigante + poucos outliers). Isso motiva apresentar o **Ward por último**, como a ligação que mantém os grupos compactos. O Ward continua sendo o hierárquico usado no resto da aula (`hc_ward`, `grupos_hc`, `k_escolhido`, seção 7).
 - **Caminho 1 para as figuras:** um script separado, `tools/figuras.R`, gera PNGs e o GIF numa pasta `figuras/` versionada no repositório. O `.qmd` só insere as imagens com Markdown. Nenhum código de desenho entra no `.R` dos alunos.
 
 Resultado conferido nos dados reais (2.212 clientes, 15 variáveis padronizadas, distância euclidiana), tamanhos com k = 3:
@@ -61,7 +61,7 @@ Resultado conferido nos dados reais (2.212 clientes, 15 variáveis padronizadas,
 
 ### Exemplo de brinquedo (minha proposta)
 
-Seis clientes com nome (por exemplo Ana, Bruno, Carla, Diego, Elisa, Fábio), com **2 variáveis** já em escala comparável (por exemplo "renda" e "gasto", ambas de 0 a 10, ou z-scores arredondados), para caberem num plano. Os pontos são escolhidos para formar dois grupinhos e um cliente intermediário, de modo que **single, complete e average produzam dendrogramas visivelmente diferentes** (pelo menos uma junção em ordem ou altura diferente). Os dados ficam definidos **uma vez** (um `tibble` pequeno) e aparecem no `.qmd` (para os alunos rodarem) e no `tools/figuras.R` (para desenhar). A coerência entre os dois é garantida por teste.
+Seis clientes com nome (por exemplo Ana, Bruno, Carla, Diego, Elisa, Fábio), com **2 variáveis** já em escala comparável (por exemplo "renda" e "gasto", ambas de 0 a 10, ou z-scores arredondados), para caberem num plano. Os pontos são escolhidos para formar dois grupinhos e um cliente intermediário, de modo que **single, complete e average produzam dendrogramas visivelmente diferentes** (pelo menos uma junção em ordem ou altura diferente), e que o Ward leia como "o que forma grupos compactos". Os dados ficam definidos **uma vez** (um `tibble` pequeno) e aparecem no `.qmd` (para os alunos rodarem) e no `tools/figuras.R` (para desenhar). A coerência entre os dois é garantida por teste.
 
 Para o GIF do k-means, seis pontos são poucos. A proposta é um segundo conjunto 2D com cerca de 30 a 60 pontos simulados com semente fixa, em 3 nuvens, e **centroides iniciais escolhidos para que a animação dure de 3 a 6 iterações visíveis**. Os bonequinhos ficam no exemplo de 6 clientes; no GIF, os clientes são pontos (bonequinhos demais poluem).
 
@@ -69,8 +69,8 @@ Para o GIF do k-means, seis pontos são poucos. A proposta é um segundo conjunt
 
 1. **`distancia_dois_clientes.png`:** dois bonequinhos no plano renda × gasto, com o triângulo retângulo (diferença em renda, diferença em gasto) e a hipotenusa rotulada com a distância. É o "Pitágoras" já mencionado na seção 3.
 2. **`matriz_distancias.png`:** à esquerda, os 6 bonequinhos no plano, com algumas distâncias desenhadas; à direita, a matriz 6 × 6 como tabela colorida (diagonal 0, simetria destacada, com a metade de baixo igual à saída do `dist()`).
-3. **`ligacoes_regra.png`:** três painéis lado a lado (single | complete | average). Os mesmos dois grupos do exemplo, com a(s) linha(s) que definem a distância entre eles: a menor (single), a maior (complete) e todas as linhas com a média anotada (average). Uma frase curta em cada painel.
-4. **`ligacoes_passos.png` (ou uma figura por ligação):** a construção do dendrograma passo a passo para cada ligação, lado a lado com os grupos sendo formados no plano. Formato a definir pelo builder: uma grade "passo × ligação" ou três figuras. Deve deixar visível onde as ligações divergem.
+3. **`ligacoes_regra.png`:** quatro painéis (single | complete | average | Ward). Os mesmos dois grupos do exemplo, com a(s) linha(s) que definem a distância entre eles: a menor (single), a maior (complete) e todas as linhas com a média anotada (average). No painel do Ward, o "espalhamento" de cada grupo (os clientes ligados ao seu centro) e o do grupo unido, com a ideia "junta os dois que, unidos, ficam menos espalhados", sem fórmula. Uma frase curta em cada painel.
+4. **`ligacoes_passos.png` (ou uma figura por ligação):** a construção do dendrograma passo a passo para cada uma das quatro ligações, lado a lado com os grupos sendo formados no plano. Formato a definir pelo builder: uma grade "passo × ligação" ou três figuras. Deve deixar visível onde as ligações divergem.
 5. **`kmeans_iteracoes.gif`:** cada iteração mostra dois quadros, "atribuição" (pontos coloridos pelo centro mais próximo) e "atualização" (o centroide anda até a média, com uma seta ou rastro da posição anterior), com um título do tipo "Iteração 2: recalculando os centroides". O GIF termina com uma pausa no quadro final ("ninguém mudou de grupo: fim"). O algoritmo é implementado à mão no script (para capturar cada passo), e o resultado final é conferido contra `kmeans(..., algorithm = "Lloyd")` com os mesmos centros iniciais.
 6. **(Opcional) `kmeans_iteracoes_estatico.png`:** os quadros do GIF numa grade, para quem imprime o material.
 
@@ -79,9 +79,9 @@ Estilo: ggplot2, paleta consistente com a aula atual (firebrick / steelblue / da
 ### Mudanças no `.qmd`
 
 - **Seção 4, "Distância entre clientes e a matriz de distâncias":** antes do exemplo de 3 clientes, entram as figuras 1 e 2 e um bloco curto em que os alunos rodam `dist()` no exemplo de 6 clientes e reconhecem os números da figura. O exemplo atual com 3 clientes reais e a conta à mão continua.
-- **Nova subseção "Como juntar dois grupos? Single, complete e average"**, no lugar de "A ligação de Ward": explicação em palavras + figura 3 + figura 4 + bloco em que os alunos rodam `hclust()` com as três ligações no exemplo de 6 clientes e plotam os três dendrogramas (`par(mfrow = c(1, 3))`, base R, poucas linhas).
+- **Nova subseção "Como juntar dois grupos? Single, complete e average"**, no lugar de "A ligação de Ward": explicação em palavras + figura 3 + figura 4 + bloco em que os alunos rodam `hclust()` com as quatro ligações (single, complete, average e `ward.D2`) no exemplo de 6 clientes e plotam os quatro dendrogramas (`par(mfrow = c(2, 2))`, base R, poucas linhas). O Ward aparece aqui pela primeira vez, no painel da figura 3 e no dendrograma.
 - **Nova subseção "E na base real?":** os alunos rodam as três ligações em `dist_euc` e veem `table(cutree(..., k = 3))` de cada uma. O texto explica a falha: a base é um contínuo, então single "encadeia" e average e complete isolam outliers (o texto final só pode afirmar o que for conferido nos dados).
-- **Subseção "A ligação de Ward"** (mantida, reescrita como desfecho): "junta os dois grupos que, ao se unirem, ficam menos espalhados", ligada à intuição de "grupos compactos" e à WSS que reaparece no k-means. O código `hc_ward`, o dendrograma, as alturas, `k_escolhido` e o `cutree` continuam como estão.
+- **Subseção "A ligação de Ward"** (mantida, reescrita como desfecho): retoma o painel do Ward da figura 3 ("junta os dois grupos que, ao se unirem, ficam menos espalhados"), mostra que na base real ele dá grupos de tamanhos razoáveis e liga a ideia à WSS que reaparece no k-means. O código `hc_ward`, o dendrograma, as alturas, `k_escolhido` e o `cutree` continuam como estão.
 - **Seção 5, "A ideia do k-means":** o GIF entra logo depois da lista dos 4 passos, com uma legenda que liga cada quadro a um passo.
 - **Bônus 6b:** a frase "trocamos a ligação... usamos a ligação média" passa a remeter à figura de average da seção 4. O conteúdo não muda.
 - **README:** a lista de "O que os alunos aprendem" passa a citar single/complete/average + Ward; a seção "Como editar" ganha o passo `Rscript tools/figuras.R` (com a nota de que ele exige `gifski`); a tabela de arquivos ganha `tools/figuras.R` e `figuras/`; as dicas para o professor indicam quais blocos novos podem ser pulados.
@@ -92,12 +92,12 @@ Estilo: ggplot2, paleta consistente com a aula atual (firebrick / steelblue / da
 - Novo: os arquivos de `figuras/` referenciados no `.qmd` existem.
 - Novo: o exemplo de brinquedo no `.qmd` é igual ao usado em `tools/figuras.R` (por exemplo, um arquivo de dados compartilhado ou comparação dos valores).
 - Novo: nas três ligações sobre a base real, o maior grupo com k = 3 tem mais de 90% dos clientes (protege o texto "falham" contra mudanças de dados ou de versão).
-- Novo: no exemplo de 6 clientes, pelo menos duas ligações dão dendrogramas diferentes (a figura 4 depende disso).
+- Novo: no exemplo de 6 clientes, pelo menos duas das quatro ligações dão dendrogramas diferentes (a figura 4 depende disso).
 - O teste de tempo (< 2 min) continua; as três ligações extras na base real custam poucos segundos.
 
 ## O que fica com o builder
 
-- As coordenadas exatas dos 6 clientes e do conjunto do GIF (respeitando as propriedades acima).
+- As coordenadas exatas dos 6 clientes e do conjunto do GIF (respeitando as propriedades acima). O exemplo de 6 clientes com 2 variáveis e o conjunto simulado separado para o GIF valem como aprovados junto com este documento.
 - O desenho dos bonequinhos e o layout das figuras 2 e 4.
 - O número de quadros e o tempo por quadro do GIF (meta: arquivo de até ~2 MB, porque ele é embutido no HTML).
 - Onde guardar os dados do exemplo para o `.qmd` e o `figuras.R` compartilharem (no `.qmd` inline, conferido por teste, ou num `.csv` pequeno).
