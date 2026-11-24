@@ -28,8 +28,8 @@ Por que não criar os grupos com uma **regra fixa**, por exemplo "renda alta" e 
 O que vamos fazer hoje:
 
 1. **Entender e preparar os dados** de clientes;
-2. **Agrupar** os clientes com três técnicas (hierárquica, k-means e k-medoides);
-3. **Comparar** as técnicas e escolher uma;
+2. **Agrupar** os clientes com o **cluster hierárquico**, primeiro só com variáveis numéricas (distância euclidiana) e depois também com categóricas (distância de Gower);
+3. **Comparar** os resultados das duas réguas e escolher os grupos que vão para o marketing;
 4. **Entregar "fichas de segmento"**: para cada grupo, um nome, um perfil em linguagem de negócio e uma ação de marketing sugerida.
 
 A entrega final **não é um gráfico bonito**: é a ficha que o time de marketing consegue usar na segunda-feira.
@@ -76,7 +76,7 @@ Pacotes são "caixas de ferramentas" que estendem o R. O bloco abaixo **instala 
 ```{r}
 # Lista de pacotes usados na aula
 pacotes <- c("tidyverse",   # manipulação (dplyr), leitura (readr) e gráficos (ggplot2)
-             "cluster")     # pam() (k-medoides), silhouette() e daisy() (Gower)
+             "cluster")     # daisy() (distância de Gower)
 
 # Quais ainda não estão instalados?
 faltando <- pacotes[!sapply(pacotes, requireNamespace, quietly = TRUE)]
@@ -628,7 +628,7 @@ O resultado é decepcionante. Com a single, os grupos têm **2.208**, **3** e **
 
 ## A ligação de Ward
 
-É aqui que entra o **Ward**, a quarta regra da figura: em cada passo, ele junta os dois grupos cuja fusão **menos aumenta o espalhamento** em volta dos centros. Assim, evita fusões que criariam grupos grandes e espalhados e prefere formar **grupos compactos**, que é o que queremos para segmentar. (Essa ideia de "espalhamento em volta do centro" volta na seção 5, com o nome de WSS.) Em R, é o `method = "ward.D2"` (a versão de Ward que trabalha com as distâncias euclidianas como elas são).
+É aqui que entra o **Ward**, a quarta regra da figura: em cada passo, ele junta os dois grupos cuja fusão **menos aumenta o espalhamento** em volta dos centros. Assim, evita fusões que criariam grupos grandes e espalhados e prefere formar **grupos compactos**, que é o que queremos para segmentar. Em R, é o `method = "ward.D2"` (a versão de Ward que trabalha com as distâncias euclidianas como elas são).
 
 ```{r}
 # Clustering hierárquico com a ligação de Ward, a partir da matriz de distâncias
@@ -659,7 +659,7 @@ Para "ler" a árvore com números, olhamos as alturas das **últimas fusões** (
 rev(tail(hc_ward$height, 6)) |> round(1)
 ```
 
-A última fusão (que junta 2 grupos em 1) tem altura **147,4**; a anterior (de 3 grupos para 2), **82,5**. Depois disso as alturas caem pela metade e ficam parecidas entre si: **42,2**, **41,7**, **36,8** e **29,6**. Ou seja, juntar os clientes até sobrarem **3 grupos** é "barato", mas juntar esses 3 grupos é "caro": a árvore sugere **3 grupos**. (Note, porém, que a fusão mais "cara", de 147,4 para 82,5, também sugeriria **2 grupos**; voltamos a isso na seção 5.) Vamos usar `k_escolhido = 3`, uma decisão **que vamos conferir na seção 5** com o cotovelo e a silhueta do k-means (e com a pergunta "isso serve ao marketing?").
+A última fusão (que junta 2 grupos em 1) tem altura **147,4**; a anterior (de 3 grupos para 2), **82,5**. Depois disso as alturas caem pela metade e ficam parecidas entre si: **42,2**, **41,7**, **36,8** e **29,6**. Ou seja, juntar os clientes até sobrarem **3 grupos** é "barato", mas juntar esses 3 grupos é "caro": a árvore sugere **3 grupos**. (Note, porém, que o maior salto de todos, de 82,5 para 147,4, também sugeriria cortar em **2 grupos**.) Não existe um "k certo": a árvore aponta 2 ou 3 grupos, e ficamos com **3**, porque 2 segmentos seriam pouco para o marketing (só dois tipos de cliente para 2.212 pessoas), e a fusão de 3 para 2 grupos ainda é "cara" (82,5, contra 42,2 da seguinte), ou seja, junta grupos bem diferentes. Vamos usar `k_escolhido = 3`. Um analista cuidadoso **mostra** essa decisão em vez de escondê-la.
 
 ## Cortando a árvore em k grupos
 
@@ -668,7 +668,7 @@ A última fusão (que junta 2 grupos em 1) tem altura **147,4**; a anterior (de 
 ```{r}
 #| fig-cap: "Dendrograma cortado em 3 grupos"
 
-# Número de grupos (k): sugerido pelo dendrograma; conferido na seção 5
+# Número de grupos (k): sugerido pelo dendrograma
 k_escolhido <- 3L
 
 # Cortando a árvore em k grupos: um número de grupo (1, 2, 3...) para cada cliente
@@ -684,258 +684,7 @@ plot(hc_ward, labels = FALSE, hang = -1,
 rect.hclust(hc_ward, k = k_escolhido, border = c("firebrick", "steelblue", "darkgreen"))
 ```
 
-O corte em 3 grupos gera grupos de **825**, **838** e **549** clientes: nenhum grupo minúsculo, o que é bom para o marketing (não vale a pena criar uma campanha para 10 pessoas). Quem é cada grupo veremos na seção 8; antes, vamos ver outras técnicas.
-
-# 5. K-means
-
-## A ideia do k-means
-
-O k-means não constrói uma árvore. Ele recebe o número de grupos *k* e procura ***k* "centros"** que resumam os clientes. O **centroide** de um grupo é o "cliente médio" do grupo: a média de cada variável entre os clientes que estão nele (ele não precisa ser um cliente real). O algoritmo funciona assim:
-
-1. **Sorteia** *k* clientes para servirem de centros iniciais;
-2. **Atribui** cada cliente ao centro mais próximo (distância euclidiana);
-3. **Recalcula** cada centro como o centroide (a média) dos clientes que caíram nele;
-4. **Repete** os passos 2 e 3 até ninguém mais trocar de grupo.
-
-A animação mostra o algoritmo em 45 clientes com 2 variáveis. Os ✕ são os centros: começam em 3 clientes sorteados (passo 1) e, a cada iteração, os clientes mudam de cor conforme o centro mais próximo (passo 2) e cada centro anda até a média do seu grupo (passo 3, a seta). Quando ninguém muda de cor, o algoritmo para.
-
-![O k-means passo a passo: atribuir cada cliente ao centro mais próximo e mover cada centro para a média do seu grupo, até ninguém mudar de grupo](figuras/kmeans_iteracoes.gif)
-
-Para medir se os grupos ficaram bons, usamos a **WSS** (*within sum of squares*, soma de quadrados dentro dos grupos): a soma das distâncias ao quadrado de cada cliente até o centroide do seu grupo. **Quanto menor a WSS, mais compactos os grupos.** O k-means tenta deixá-la a menor possível.
-
-## O sorteio inicial importa: `nstart`
-
-O passo 1 é um **sorteio**. Com um sorteio "azarado", o algoritmo pode parar numa solução pior, da qual não consegue sair. Para ver isso, rodamos o k-means duas vezes com um único sorteio (`nstart = 1`) e **sementes diferentes**. A semente (`set.seed()`) fixa o sorteio, para que todos na turma obtenham o mesmo resultado. Aqui escolhemos de propósito uma semente (6) em que o sorteio dá errado; entre as sementes de 1 a 100, só a 6 dá errado (1 em 100); nas outras 99, o resultado é o bom.
-
-```{r}
-# 5. K-means ----
-
-# Execução 1: um único sorteio inicial (nstart = 1), com a semente 1
-set.seed(1)
-km_semente1 <- kmeans(dados_pad, centers = k_escolhido, nstart = 1)
-
-# Execução 2: um único sorteio inicial, com a semente 6
-set.seed(6)
-km_semente6 <- kmeans(dados_pad, centers = k_escolhido, nstart = 1)
-
-# WSS total (tot.withinss) de cada execução: quanto menor, melhor
-km_semente1$tot.withinss
-km_semente6$tot.withinss
-```
-
-Com os mesmos dados e o mesmo *k*, a WSS foi **18.159,8** numa execução e **20.955,9** na outra: a segunda parou numa solução pior (grupos menos compactos). O remédio é o argumento **`nstart`**: o k-means faz vários sorteios iniciais (aqui, 25), roda o algoritmo a partir de cada um e **fica com o de menor WSS**. Custa um pouco mais de tempo, mas protege contra o azar. A partir daqui, sempre usaremos `nstart = 25`.
-
-## Quantos grupos? Cotovelo e silhueta
-
-O k-means precisa que digamos o *k*. Para conferir a escolha da seção 4, rodamos o k-means para **k de 2 a 8** e calculamos duas medidas para cada um:
-
-- **WSS:** sempre diminui quando aumentamos *k* (com mais grupos, cada cliente fica mais perto de um centro). Por isso não escolhemos "a menor WSS", e sim o **cotovelo**: o ponto a partir do qual aumentar *k* passa a ajudar pouco.
-- **Silhueta média:** para cada cliente, compara a distância média até os colegas do **próprio grupo** com a distância média até os clientes do **grupo vizinho mais próximo**. Vai de −1 a 1: perto de **1**, o cliente está bem encaixado no seu grupo; perto de **0**, está "em cima do muro" entre dois grupos; **negativa**, provavelmente está no grupo errado. A média sobre todos os clientes resume a qualidade da divisão: **quanto maior, melhor**.
-
-```{r}
-# Função que roda o k-means para um valor de k e devolve a WSS e a silhueta média
-avaliar_k <- function(k) {
-  set.seed(2026)                                            # sorteio reprodutível
-  km_k <- kmeans(dados_pad, centers = k, nstart = 25)
-  # silhouette() precisa dos grupos e da matriz de distâncias;
-  # a coluna "sil_width" tem a silhueta de cada cliente
-  sil <- silhouette(km_k$cluster, dist_euc)
-  tibble(k = k,
-         wss = km_k$tot.withinss,
-         silhueta_media = mean(sil[, "sil_width"]))
-}
-
-# Aplicando a função para k = 2, 3, ..., 8 (map) e empilhando as linhas numa tabela (list_rbind)
-avaliacao_k <- map(2:8, avaliar_k) |> list_rbind()
-avaliacao_k
-```
-
-```{r}
-#| fig-cap: "Método do cotovelo: WSS do k-means para k de 2 a 8"
-
-# Gráfico do cotovelo: WSS em função de k
-avaliacao_k |>
-  ggplot(aes(x = k, y = wss)) +
-  geom_line(color = "steelblue") +
-  geom_point(size = 3, color = "steelblue") +
-  scale_x_continuous(breaks = 2:8) +
-  labs(x = "Número de grupos (k)", y = "WSS (soma de quadrados dentro dos grupos)")
-```
-
-```{r}
-#| fig-cap: "Silhueta média do k-means para k de 2 a 8"
-
-# Gráfico da silhueta média em função de k
-avaliacao_k |>
-  ggplot(aes(x = k, y = silhueta_media)) +
-  geom_line(color = "darkorange") +
-  geom_point(size = 3, color = "darkorange") +
-  scale_x_continuous(breaks = 2:8) +
-  labs(x = "Número de grupos (k)", y = "Silhueta média")
-```
-
-O que os números dizem:
-
-- **Cotovelo:** de *k* = 2 para 3, a WSS cai de **21.200,7** para **18.159,8** (queda de cerca de 3.041). De 3 para 4, cai só para **17.100,7** (cerca de 1.059), e as quedas seguintes são ainda menores (cerca de 936, 690, 529 e 437). O "cotovelo" está em **k = 3**.
-- **Silhueta:** a maior silhueta média é a de **k = 2 (0,318)**, e não a de k = 3 (**0,242**). Depois vem k = 4 (0,170), e de k = 5 em diante ela fica em torno de 0,13.
-
-Ou seja, **os critérios não concordam totalmente**, e é importante dizer isso com honestidade: a silhueta prefere 2 grupos. Mas 2 segmentos é pouco para o marketing: seriam só dois tipos de cliente para 2.212 pessoas, e o dendrograma mostrou que separar um dos dois grandes ramos em dois ainda é uma fusão "cara" (altura 82,5, contra 42,2 da seguinte), ou seja, esses dois subgrupos são bem diferentes entre si. Já **k = 3** tem o cotovelo da WSS, a segunda maior silhueta (bem acima das de k = 4 em diante) e o corte sugerido pelo dendrograma. Por isso **mantemos `k_escolhido = 3`**. Não existe um "k certo": a escolha combina os números com o que é útil para o negócio, e um analista cuidadoso **mostra** essa decisão em vez de escondê-la.
-
-Repare também que as silhuetas são **baixas**: com *k* = 3, 0,242, abaixo de 0,25, faixa que Kaufman e Rousseeuw (autores da silhueta e do PAM) descrevem como "sem estrutura substancial" (e a maior, a de *k* = 2, é só 0,318). Isso quer dizer que esta base **não tem grupos naturais bem separados**: os clientes formam um **contínuo**, e a segmentação é uma **divisão útil** desse contínuo, não a descoberta de "ilhas" que já existiam. Veremos isso na PCA da seção 8: os segmentos são "fatias" ao longo de um eixo, o de "quanto o cliente gasta". Por isso os segmentos devem ser lidos como "tipos predominantes", não como caixas fechadas.
-
-## O k-means final
-
-Com o *k* escolhido, rodamos o k-means final com `nstart = 25`.
-
-```{r}
-# K-means final: k_escolhido grupos, 25 sorteios iniciais, semente fixa
-set.seed(2026)
-km <- kmeans(dados_pad, centers = k_escolhido, nstart = 25)
-
-# WSS da solução final (compare com as duas execuções com nstart = 1)
-km$tot.withinss
-
-# Quantas iterações (repetições dos passos 2 e 3) até estabilizar
-km$iter
-
-# Grupo de cada cliente e tamanho de cada grupo
-grupos_km <- km$cluster
-km$size
-```
-
-A solução final tem WSS **18.159,8**, a mesma da execução com a semente 1 e bem abaixo da execução "azarada" (20.955,9). O algoritmo estabilizou em **3 iterações**. Os grupos têm **889**, **622** e **701** clientes, tamanhos diferentes dos do hierárquico (825, 838 e 549): as duas técnicas usam a mesma régua e o mesmo *k*, mas **não precisam chegar aos mesmos grupos**. Vamos comparar as técnicas na seção 7 e descrever os segmentos na seção 8.
-
-# 6. K-medoides (PAM)
-
-## Centroide × medoide
-
-O k-means resume cada grupo por um **centroide**: a média de cada variável entre os clientes do grupo. Essa média é um "cliente de mentira": ela pode ter, por exemplo, **1,24 filho**, algo que nenhum cliente tem. O **k-medoides** troca o centroide por um **medoide**: o **cliente real** do grupo que está, em média, mais perto de todos os outros clientes do grupo. É o "cliente típico" do segmento, e tem uma vantagem prática enorme: dá para mostrar ao marketing **uma pessoa de verdade** ("este é o cliente que representa o grupo"), com renda, idade e compras de verdade.
-
-O algoritmo mais usado para o k-medoides é o **PAM** (*Partitioning Around Medoids*, "particionar em torno de medoides"). Ele faz algo parecido com o k-means, mas com clientes reais no lugar das médias:
-
-1. **Escolhe** *k* clientes como medoides iniciais (passo *BUILD*: escolhe, um a um, o cliente que mais reduz a distância total; **não há sorteio**);
-2. **Atribui** cada cliente ao medoide mais próximo;
-3. **Testa trocas** (passo *SWAP*): para cada medoide, verifica se trocá-lo por outro cliente diminui a **soma das distâncias** de cada cliente até o seu medoide. Se diminuir, troca;
-4. **Repete** até nenhuma troca ajudar.
-
-## Por que o medoide é mais robusto a outliers
-
-Um **outlier** é um valor muito fora do padrão (por exemplo, um cliente que gastou muito mais que todos os outros). A média "corre atrás" dele; o medoide, não. Um exemplo com só **5 clientes**, um deles com gasto altíssimo:
-
-```{r}
-# 6. K-medoides (PAM) ----
-
-# Gastos de 5 clientes: quatro parecidos e um outlier (5000)
-gastos_exemplo <- c(100, 120, 130, 150, 5000)
-
-# Centroide: a média (puxada pelo outlier)
-mean(gastos_exemplo)
-
-# Medoide: para cada cliente, somamos as distâncias até todos os outros...
-soma_dist <- sapply(gastos_exemplo, function(m) sum(abs(gastos_exemplo - m)))
-soma_dist
-
-# ...e o medoide é o cliente com a menor soma
-gastos_exemplo[which.min(soma_dist)]
-```
-
-A média dá **1.100**, um valor que **nenhum dos 5 clientes** tem e que não descreve nem os quatro "normais" nem o outlier. O medoide é o cliente que gastou **130**, que representa bem a maioria. Isso acontece por dois motivos: o medoide precisa ser um cliente real, e o PAM soma as **distâncias** (e não as distâncias **ao quadrado**, como o k-means). Elevar ao quadrado aumenta muito o peso de quem está longe, e por isso o k-means é mais sensível a outliers.
-
-## Rodando o PAM
-
-Usamos a função `pam()` do pacote `cluster`, com **o mesmo *k*** (`k_escolhido = 3`) e a **mesma matriz de distâncias euclidianas** (`dist_euc`) das seções 4 e 5: assim, a comparação entre as técnicas é justa. Passar a matriz `dist_euc` (em vez de `dados_pad`) evita que o R recalcule as 2.445.366 distâncias.
-
-Repare que **não usamos `set.seed()`** aqui: como vimos acima, o PAM **não sorteia** nada. Rodando duas vezes, o resultado é sempre o mesmo, ao contrário do k-means, que depende do sorteio inicial (e por isso precisou de `nstart`).
-
-```{r}
-# PAM com k_escolhido grupos, a partir da matriz de distâncias euclidianas
-# (sem set.seed: o PAM não tem sorteio, o resultado é sempre o mesmo)
-pam_euc <- pam(dist_euc, k = k_escolhido)
-
-# Grupo de cada cliente (1, 2 ou 3)
-grupos_pam <- pam_euc$clustering
-
-# Quantos clientes em cada grupo?
-table(grupos_pam)
-
-# Posição (linha da base) dos clientes escolhidos como medoides
-pam_euc$id.med
-```
-
-O PAM formou grupos de **726**, **822** e **664** clientes. Os medoides são os clientes das linhas **53**, **1270** e **1297** da base.
-
-## Os medoides: nossos "clientes-exemplo"
-
-Vamos ver quem são esses três clientes. Guardamos as linhas deles em `medoides`, com uma coluna `grupo` dizendo de qual grupo cada um é o representante (o 1º medoide representa o grupo 1, e assim por diante).
-
-```{r}
-# As linhas da base que são medoides, com o número do grupo que cada uma representa
-medoides <- clientes[pam_euc$id.med, ] |>
-  mutate(grupo = seq_len(k_escolhido), .before = 1)
-
-# Os clientes-exemplo, com algumas variáveis fáceis de interpretar
-# (as.data.frame() mostra todas as colunas, sem esconder nenhuma)
-medoides |>
-  select(grupo, ID, Income, Idade, Filhos, Gasto_total, Compras_total,
-         NumWebPurchases, NumStorePurchases, NumWebVisitsMonth) |>
-  as.data.frame()
-```
-
-Lendo cada "cliente-exemplo":
-
-- **Grupo 1 (cliente ID 10383):** renda de **70.287**, 48 anos, **sem filhos**, gastou **1.093** no total, com **20 compras** (10 delas na loja física). Um cliente de renda alta que compra bastante.
-- **Grupo 2 (cliente ID 5267):** renda de **33.986**, 44 anos, **1 filho**, gastou só **44**, com **4 compras**. Visita o site **7 vezes por mês**, mas só **1** das compras foi pela internet. Um cliente de renda baixa que olha e compra pouco.
-- **Grupo 3 (cliente ID 10260):** renda de **45.143**, 49 anos, **1 filho**, gastou **311**, com **12 compras**. Um cliente intermediário.
-
-Agora comparamos o medoide com o **centroide** (a média) de cada grupo, nas variáveis originais:
-
-```{r}
-# Centroide de cada grupo do PAM: a média de algumas variáveis originais
-clientes |>
-  mutate(grupo = grupos_pam) |>
-  group_by(grupo) |>
-  summarise(Income = mean(Income), Filhos = mean(Filhos),
-            Gasto_total = mean(Gasto_total)) |>
-  # arredondando: renda e gasto sem casas decimais, filhos com 2 casas
-  mutate(Income = round(Income), Filhos = round(Filhos, 2),
-         Gasto_total = round(Gasto_total))
-```
-
-As médias de `Filhos` são **0,35**, **1,24** e **1,24**: números que nenhum cliente real tem. Os medoides, por outro lado, têm 0, 1 e 1 filho. As médias de gasto (**1.264**, **64** e **561**) são diferentes dos gastos dos medoides (1.093, 44 e 311), porque a média é puxada para cima pelos clientes que gastam muito mais que os outros (a cauda longa que vimos na seção 2). O medoide é o cliente "do meio" do grupo, não a média. Note que, nos três grupos, o gasto do medoide fica abaixo até da mediana do grupo (1.214, 53 e 450, respectivamente): o medoide é escolhido olhando as **15 variáveis** (na escala log e padronizada), e não só o gasto.
-
-## Silhueta do PAM
-
-Como no k-means, medimos a qualidade dos grupos com a **silhueta** (de −1 a 1; quanto maior, mais bem encaixados os clientes estão no seu grupo). O PAM já calcula a silhueta de cada cliente e guarda em `pam_euc$silinfo`.
-
-```{r}
-#| fig-cap: "Silhueta de cada cliente no PAM (k = 3)"
-
-# Silhueta média geral
-pam_euc$silinfo$avg.width
-
-# Silhueta média de cada grupo
-pam_euc$silinfo$clus.avg.widths
-
-# Gráfico de silhueta: uma barra por cliente, ordenadas dentro de cada grupo
-# (barras abaixo de zero são clientes que talvez estejam no grupo errado)
-# silhouette() calcula a silhueta de cada cliente; plot() desenha (border = NA tira o contorno das barras)
-plot(silhouette(pam_euc), border = NA, col = c("steelblue", "firebrick", "darkgreen"),
-     main = "Silhueta de cada cliente (PAM, k = 3)",
-     xlab = "Largura da silhueta", sub = "")
-```
-
-A silhueta média do PAM é **0,230**, um pouco abaixo da do k-means com o mesmo *k* (**0,242**). As duas silhuetas usam a mesma régua (a distância euclidiana `dist_euc`), então a comparação é direta. Uma pequena diferença não surpreende: as duas técnicas buscam objetivos diferentes (o k-means minimiza a soma das distâncias **ao quadrado** até os centroides; o PAM, a soma das distâncias até os medoides) e chegam a grupos um pouco diferentes. Por grupo, a silhueta é **0,256** (grupo 1), **0,327** (grupo 2) e só **0,080** (grupo 3). O grupo 3, o "intermediário", tem muitos clientes perto da fronteira com os outros dois grupos (no gráfico, é o grupo com mais barras perto de zero ou negativas). Faz sentido: quem gasta "um pouco" fica entre quem gasta muito e quem quase não gasta.
-
-## PAM × k-means: os grupos são parecidos?
-
-Uma **tabela cruzada** mostra, para cada grupo do k-means (linhas), em que grupo do PAM (colunas) os clientes caíram. Os números dos grupos são só "etiquetas": o grupo 1 de uma técnica não precisa ser o grupo 1 da outra.
-
-```{r}
-# Tabela cruzada: grupos do k-means (linhas) × grupos do PAM (colunas)
-table(kmeans = grupos_km, pam = grupos_pam)
-```
-
-As técnicas concordam bastante: o grupo 1 do k-means corresponde ao grupo 2 do PAM (**819** clientes em comum), o grupo 2 do k-means ao grupo 3 do PAM (**577**) e o grupo 3 do k-means ao grupo 1 do PAM (**684**). Somando, **2.080 dos 2.212 clientes** (94%) estão em grupos "equivalentes"; os 132 restantes são, em boa parte, clientes de fronteira. Na seção 7 comparamos as três técnicas lado a lado e escolhemos uma.
+O corte em 3 grupos gera grupos de **825**, **838** e **549** clientes: nenhum grupo minúsculo, o que é bom para o marketing (não vale a pena criar uma campanha para 10 pessoas). Quem é cada grupo veremos na seção 6; antes, na seção 5, vamos ver o que muda quando as variáveis categóricas entram no agrupamento.
 
 # 6b. Bônus: dados mistos e distância de Gower (pode pular)
 
@@ -1018,154 +767,21 @@ as.matrix(dist_gower)[1, 3]
 
 As duas contas dão o mesmo valor, **0,1996** (cerca de 0,20): os dois clientes são bem parecidos. Repare nas parcelas: a de `Education` é **0** (mesma escolaridade) e a de `Marital_Status` é **1** (estado civil diferente). A maior parcela numérica é a de `NumStorePurchases` (**0,462**), menos da metade da parcela do estado civil. Uma única categórica diferente vale tanto quanto a **maior diferença possível** numa numérica (por exemplo, o cliente mais pobre contra o mais rico da base). Guarde essa observação: ela vai aparecer nos resultados.
 
-## Hierárquico com Gower: ligação média
+# 6. Resultados para o negócio
 
-Com a matriz de Gower, o cluster hierárquico funciona do mesmo jeito: só precisa das dissimilaridades entre os pares. Mas **trocamos a ligação**. O Ward foi pensado para a distância euclidiana (ele mede o "aumento da variação" com médias e quadrados), e a Gower não é euclidiana. Usamos a **ligação média** (`method = "average"`, a regra do painel *average* da figura da seção 4): a distância entre dois grupos é a **média de todas as dissimilaridades** entre um cliente de um grupo e um cliente do outro. Ela usa só as dissimilaridades, então serve para qualquer régua.
-
-> **Nota (não vamos rodar):** há quem use o Ward com a Gower depois de tirar a raiz quadrada das dissimilaridades, `hclust(sqrt(dist_gower), method = "ward.D2")`, porque a raiz deixa a Gower "mais parecida" com uma distância euclidiana. Funciona na prática, mas é uma adaptação, e não o uso para o qual o Ward foi criado. Por isso o deixamos de fora.
+Os segmentos que vão para o marketing são os **3 grupos do Ward com a distância euclidiana** (seção 4): eles separam os clientes pelo **comportamento de compra**, e a seção 5 mostrou que a estrutura principal se mantém mesmo quando a régua muda.
 
 ```{r}
-# Hierárquico com a matriz de Gower e ligação média
-hc_gower <- hclust(dist_gower, method = "average")
-# (Ward com Gower só com ressalva, e não rodamos aqui:
-#  hclust(sqrt(dist_gower), method = "ward.D2"))
+# 6. Resultados para o negócio ----
 
-# Cortando a árvore em k grupos: quantos clientes em cada grupo?
-table(cutree(hc_gower, k = k_escolhido))
-```
-
-O resultado é decepcionante para o marketing: o corte em 3 grupos deixa **2.207 clientes num grupo só**, e os outros dois grupos têm **4 clientes e 1 cliente**. A ligação média tende a separar primeiro os clientes **mais atípicos** (os que estão longe de todo mundo), e só depois divide a "massa" de clientes. Isso não é um erro do R: é uma característica da ligação média, e um bom lembrete de que **a escolha da ligação muda tudo**. Para segmentar esta base com a Gower, o PAM se sai melhor.
-
-## PAM com Gower
-
-O PAM também só precisa das dissimilaridades entre os pares, então aceita a Gower diretamente. Usamos o mesmo *k*.
-
-```{r}
-# PAM com a matriz de Gower e o mesmo k (sem sorteio, sem set.seed)
-pam_gower <- pam(dist_gower, k = k_escolhido)
-
-# Tamanho dos grupos e silhueta média (calculada com a Gower)
-table(pam_gower$clustering)
-pam_gower$silinfo$avg.width
-```
-
-O PAM com Gower forma grupos de **976**, **446** e **790** clientes, com silhueta média de **0,230**. Atenção: essa silhueta usa a régua de Gower, então **não dá para compará-la** diretamente com a do PAM euclidiano (que, por coincidência, também é 0,230): são réguas diferentes.
-
-## Por que o k-means não aceita Gower?
-
-O k-means **não recebe uma matriz de distâncias**: ele precisa dos dados, porque o passo 3 do algoritmo calcula a **média** de cada variável no grupo. Dois problemas:
-
-1. **Não existe média de categoria:** qual é a "média" entre `PhD` e `Graduation`?
-2. O passo da média só garante que os grupos melhoram quando a régua é a **distância euclidiana ao quadrado**. Com outra régua, como a Gower, trocar o centro pela média pode até piorar os grupos.
-
-Quem precisa de algo "tipo k-means" com dados mistos tem alternativas, que só citamos aqui: o **k-prototypes** (pacote `clustMixType`), que usa médias nas numéricas e a categoria mais frequente nas categóricas; ou transformar a matriz de Gower em coordenadas numéricas com **MDS** (escalonamento multidimensional) e rodar o k-means nelas.
-
-Resumindo:
-
-| Técnica | Aceita Gower? | Por quê |
-|---|---|---|
-| Hierárquico, ligação média ou completa | Sim | Usa só as dissimilaridades entre pares (a ligação completa usa a maior dissimilaridade entre os dois grupos) |
-| Hierárquico, ligação de Ward | Com ressalva | Feito para a euclidiana; há quem use `sqrt(dist_gower)` |
-| K-medoides (PAM) | Sim | Usa só as dissimilaridades; o centro é um cliente real |
-| K-means | Não | Precisa da média, que não existe para categorias |
-
-## Os segmentos mudaram com as categóricas?
-
-Comparamos os grupos do PAM com Gower (linhas) com os do PAM euclidiano da seção 6 (colunas), que só usa as numéricas. Como as duas técnicas são PAM com o mesmo *k*, a diferença vem da **régua** (e das 2 categóricas que entraram).
-
-```{r}
-# Tabela cruzada: PAM com Gower (linhas) × PAM euclidiano (colunas)
-tab_gower_vs_euc <- table(pam_gower = pam_gower$clustering, pam_euc = grupos_pam)
-tab_gower_vs_euc
-
-# Estado civil dentro de cada grupo do PAM com Gower
-table(pam_gower = pam_gower$clustering, estado_civil = clientes$Marital_Status)
-
-# ---- fim do bônus 6b ----
-```
-
-O que a tabela mostra:
-
-- O grupo 1 da Gower junta quase todo o grupo 1 euclidiano (**723** dos 726 clientes de renda e gasto altos) com **253** clientes do grupo 3 (o intermediário).
-- Os grupos 2 e 3 da Gower **não seguem** os grupos euclidianos: cada um mistura clientes do grupo 2 (os que gastam pouco) com clientes do grupo 3. A segunda tabela mostra o que os separa: o grupo 2 da Gower tem **440 clientes `Sozinho`** e só 6 `Casado/Junto`, e o grupo 3 tem **783 `Casado/Junto`** e só 7 `Sozinho`. Ou seja, entre os clientes que gastam pouco ou médio, quem decidiu a divisão foi o **estado civil**.
-
-É o efeito que antecipamos na conta à mão: uma categórica diferente vale 1 inteiro na média, enquanto as diferenças nas numéricas costumam ser frações pequenas. Com só duas categorias, `Marital_Status` vira uma "fronteira" forte.
-
-Isso é útil para o marketing? **Depende da pergunta.** Se a campanha for sobre produtos para casais ou famílias, separar quem vive com um parceiro de quem vive sozinho pode fazer sentido. Mas, para decidir **quanto e como cada cliente compra**, um segmento "casados que gastam pouco ou médio" é menos acionável do que os grupos euclidianos, que separam os clientes pelo **comportamento de compra**. A lição do bônus: incluir variáveis é uma **escolha** com consequências, e o analista precisa olhar o resultado e perguntar se os grupos respondem à pergunta do negócio. Na trilha principal, seguimos com os grupos euclidianos.
-
-# 7. Comparando as técnicas
-
-Rodamos três técnicas com **as mesmas 15 variáveis padronizadas**, **a mesma régua** (a distância euclidiana `dist_euc`) e **o mesmo *k* = 3**. Agora vamos responder duas perguntas: (1) as três técnicas encontraram os mesmos grupos? (2) qual delas vamos entregar ao marketing?
-
-## As técnicas concordam? Tabelas cruzadas
-
-Uma **tabela cruzada** conta quantos clientes caíram em cada combinação de grupos de duas técnicas. Um cuidado importante: **os números dos grupos são rótulos arbitrários**. Cada técnica numera os seus grupos na ordem em que os encontra, então o "grupo 1" do hierárquico **não tem nada a ver** com o "grupo 1" do k-means. Para ver se as técnicas concordam, procuramos, em cada linha, **uma casa com quase todos os clientes** (e não a diagonal da tabela).
-
-```{r}
-# 7. Comparando as técnicas ----
-
-# Tabela cruzada: hierárquico (linhas) × k-means (colunas)
-# Lembre: "grupo 1" de uma técnica NÃO é o "grupo 1" da outra (os rótulos são arbitrários)
-table(hierarquico = grupos_hc, kmeans = grupos_km)
-
-# Tabela cruzada: k-means (linhas) × PAM (colunas), a mesma que vimos na seção 6
-table(kmeans = grupos_km, pam = grupos_pam)
-```
-
-Lendo a primeira tabela: o grupo 1 do hierárquico corresponde ao grupo 3 do k-means (**684** clientes em comum), o grupo 2 ao grupo 1 (**816**) e o grupo 3 ao grupo 2 (**459**). Somando, **1.959 dos 2.212 clientes** (89%) caem em grupos "equivalentes". Entre k-means e PAM, como vimos na seção 6, a concordância é ainda maior: **2.080 clientes** (94%). A maior parte das discordâncias envolve o grupo "intermediário" de cada técnica, justamente o que fica entre os outros dois. Conclusão: as três técnicas enxergam **a mesma estrutura de três grupos**, com fronteiras um pouco diferentes.
-
-## Qualidade estatística: a silhueta de cada técnica
-
-Para comparar a qualidade, calculamos a **silhueta média** de cada técnica, sempre com a mesma régua (`dist_euc`). Assim, os três números são diretamente comparáveis.
-
-```{r}
-# Função: recebe os grupos de uma técnica e devolve a silhueta média
-# (silhouette() precisa dos grupos e da matriz de distâncias; a coluna "sil_width" é a silhueta de cada cliente)
-calc_silhueta <- function(grupos) {
-  mean(silhouette(grupos, dist_euc)[, "sil_width"])
-}
-
-# Tabela-resumo: uma linha por técnica, com a silhueta média e o tamanho dos grupos
-comparacao_tecnicas <- tibble(
-  tecnica = c("hierarquico", "kmeans", "pam"),
-  silhueta_media = c(calc_silhueta(grupos_hc),
-                     calc_silhueta(grupos_km),
-                     calc_silhueta(grupos_pam)),
-  # tamanhos dos grupos 1, 2 e 3, colados num texto só (ex.: "825 / 838 / 549")
-  tamanhos = c(paste(table(grupos_hc), collapse = " / "),
-               paste(table(grupos_km), collapse = " / "),
-               paste(table(grupos_pam), collapse = " / ")))
-
-comparacao_tecnicas
-```
-
-A silhueta média é **0,217** no hierárquico, **0,242** no k-means e **0,230** no PAM. O k-means fica em primeiro, mas as diferenças são **pequenas** (0,012 entre k-means e PAM) e as três estão na mesma faixa "baixa" (abaixo de 0,25) que vimos na seção 5: nenhuma técnica separa os clientes muito melhor que as outras. O hierárquico fica um pouco atrás, e uma explicação possível (nenhuma técnica otimiza a silhueta) é que ele nunca "desfaz" uma fusão feita no começo, enquanto o k-means e o PAM continuam trocando clientes de grupo até a solução estabilizar.
-
-## A escolha final
-
-Como a qualidade estatística quase empata, o desempate vem da **utilidade para o negócio**. Escolhemos o **PAM**:
-
-- **Clientes-exemplo de verdade:** cada segmento do PAM vem com um **medoide**, um cliente real que representa o grupo. Para o marketing, "este é o cliente típico do segmento" é muito mais fácil de entender e usar do que uma tabela de médias.
-- **Robustez:** o PAM é menos sensível a clientes extremos (os grandes gastadores da cauda longa), como vimos na seção 6.
-- **Custo pequeno:** a silhueta do PAM é só 0,012 menor que a do k-means, e as duas técnicas colocam 94% dos clientes nos mesmos grupos. Na prática, os segmentos seriam quase os mesmos com o k-means.
-
-É importante dizer isso abertamente: **o k-means teve a melhor silhueta**, e escolher o PAM é uma decisão que pesa a utilidade para o negócio junto com os números. Outro analista poderia escolher o k-means com bons argumentos, e chegaria a segmentos muito parecidos.
-
-```{r}
-# Técnica escolhida para entregar ao marketing (justificativa no texto)
-tecnica_final <- "pam"
-
-# Os grupos da técnica escolhida: um número de grupo para cada cliente
-# (se trocar a técnica, troque aqui também; e os medoides deixam de valer, pois são do PAM)
-grupos_final <- grupos_pam
+# Os grupos que vão para o marketing: os do Ward euclidiano (seção 4)
+grupos_final <- grupos_hc
 
 # Conferindo: tamanho de cada grupo
 table(grupos_final)
 ```
 
-# 8. Resultados para o negócio
-
-Escolhida a técnica, falta o mais importante: **traduzir os grupos em linguagem de negócio**. Vamos (1) visualizar os grupos, (2) descrever cada um nas variáveis originais, (3) dar um nome a cada segmento, (4) escrever as fichas e (5) conferir se os segmentos respondem de forma diferente às campanhas.
+Falta o mais importante: **traduzir os grupos em linguagem de negócio**. Vamos (1) visualizar os grupos, (2) descrever cada um nas variáveis originais, (3) dar um nome a cada segmento, (4) escrever as fichas e (5) conferir se os segmentos respondem de forma diferente às campanhas.
 
 ## Visualizando os grupos em 2D: PCA
 
@@ -1174,8 +790,6 @@ Cada cliente é descrito por 15 variáveis, e não dá para desenhar um gráfico
 A **variância explicada** diz quanto da variação total dos dados cada componente "guarda". Usamos a função `prcomp()` sobre `dados_pad` (os dados já padronizados).
 
 ```{r}
-# 8. Resultados para o negócio ----
-
 # PCA nos dados padronizados (as mesmas 15 variáveis do agrupamento)
 pca <- prcomp(dados_pad)
 
@@ -1192,12 +806,12 @@ O 1º componente guarda **45,7%** da variação e o 2º, **12,1%**: juntos, **57
 Lendo os pesos: no 1º componente, todos os **gastos**, a **renda** e as compras por catálogo e na loja têm pesos parecidos (em torno de −0,3), e `Filhos` e `NumWebVisitsMonth` têm peso positivo. Ele mede, em resumo, **"quanto o cliente gasta"**. O sinal de um componente é arbitrário (trocar todos os sinais dá o mesmo componente), então no gráfico multiplicamos o 1º por −1 para que **a direita seja "gasta mais"**. No 2º componente, os maiores pesos são de `NumDealsPurchases` (0,61), `Filhos` (0,42), `NumWebPurchases` (0,39) e `NumWebVisitsMonth` (0,34): ele mede **"compra com desconto, pela internet, e tem filhos"**.
 
 ```{r}
-#| fig-cap: "Clientes nos 2 primeiros componentes principais, coloridos pelo segmento (grupo do PAM)"
+#| fig-cap: "Clientes nos 2 primeiros componentes principais, coloridos pelo segmento (grupo do Ward)"
 
 # Nomes dos segmentos, do MENOR para o MAIOR gasto total médio (a regra é explicada na próxima seção)
 nomes_segmentos <- c("Econômico", "Caçador de ofertas", "Premium")
 
-# Gasto total médio de cada grupo do PAM; rank() dá a posição do grupo (1 = menor gasto)
+# Gasto total médio de cada grupo do Ward; rank() dá a posição do grupo (1 = menor gasto)
 gasto_medio_grupo <- tapply(clientes$Gasto_total, grupos_final, mean)
 segmento_pca <- nomes_segmentos[rank(gasto_medio_grupo)[grupos_final]]
 
@@ -1216,13 +830,13 @@ pontos_pca |>
        color = "Segmento")
 ```
 
-Os três grupos aparecem **lado a lado ao longo do 1º componente**: o **Econômico** à esquerda (gasta pouco), o **Premium** à direita (gasta muito) e o **Caçador de ofertas** no meio, mais "para cima" no 2º componente (mais desconto, internet e filhos). As fronteiras entre os grupos não são vazias, e os pontos se tocam: é a silhueta baixa que vimos, agora em forma de figura: os segmentos são "fatias" de um contínuo ao longo de "quanto o cliente gasta". O agrupamento foi feito com as 15 variáveis, e não com este mapa: a PCA aqui serve **só para visualizar**.
+Os três grupos aparecem **lado a lado ao longo do 1º componente**: o **Econômico** à esquerda (gasta pouco), o **Premium** à direita (gasta muito) e o **Caçador de ofertas** no meio, mais "para cima" no 2º componente (mais desconto, internet e filhos). As fronteiras entre os grupos não são vazias, e os pontos se tocam (lembre que, na base real, a single, a complete e a average não acharam grupos separados): os segmentos são "fatias" de um contínuo ao longo de "quanto o cliente gasta". O agrupamento foi feito com as 15 variáveis, e não com este mapa: a PCA aqui serve **só para visualizar**.
 
 ## Perfil de cada grupo e os nomes dos segmentos
 
 Agora descrevemos cada grupo nas **variáveis originais** (sem log e sem padronização), que o marketing entende: renda em unidades monetárias, número de filhos, gasto em 2 anos e assim por diante. Usamos médias, e para o gasto total também a mediana (lembre que o gasto tem cauda longa).
 
-**Os nomes.** Precisamos dar um nome a cada grupo, mas **não podemos amarrar o nome ao número do grupo** (do tipo "grupo 1 = Premium"): como vimos nas tabelas cruzadas, os números são rótulos arbitrários e podem mudar se alguém trocar a técnica, os dados ou a versão de um pacote. Se mudarem, a ficha passaria a descrever o grupo errado, sem nenhum aviso. Por isso, o nome é dado por uma **regra sobre o perfil**: ordenamos os grupos pelo **gasto total médio**, do menor para o maior, e damos os nomes nessa ordem.
+**Os nomes.** Precisamos dar um nome a cada grupo, mas **não podemos amarrar o nome ao número do grupo** (do tipo "grupo 1 = Premium"): os números são rótulos arbitrários e podem mudar se alguém trocar a técnica, os dados ou a versão de um pacote. Se mudarem, a ficha passaria a descrever o grupo errado, sem nenhum aviso. Por isso, o nome é dado por uma **regra sobre o perfil**: ordenamos os grupos pelo **gasto total médio**, do menor para o maior, e damos os nomes nessa ordem.
 
 ```{r}
 # Perfil de cada grupo nas variáveis originais (médias; "_medio" no nome da coluna)
@@ -1270,11 +884,11 @@ perfil_segmentos |>
 
 O que o perfil mostra (médias, salvo indicação):
 
-- **Econômico (822 clientes):** a menor renda (**32.976**) e um gasto muito baixo (**64** em 2 anos; mediana **53**), com só **5 compras**. Tem crianças pequenas em casa (`Kidhome` **0,81**) e visita **muito** o site (**6,5 visitas por mês**), mas compra pouco por lá (**1,7** compras). Responde por só **4%** do gasto total da base.
-- **Caçador de ofertas (664 clientes):** renda intermediária (**52.324**) e gasto de **561**. É o grupo que **mais compra com desconto** (**3,8** compras com desconto, mais que o dobro dos outros dois) e o que mais compra pelo site (**5,6**, quase empatado com o Premium, 5,4). Tem **adolescentes** em casa (`Teenhome` **0,82**). Responde por **28%** do gasto.
-- **Premium (726 clientes):** a maior renda (**73.118**) e o maior gasto (**1.264**), puxado por **vinhos** (576) e **carnes** (395). **67%** não têm filhos em casa. Compra muito na loja (**8,6**) e pelo catálogo (**5,6**), quase não usa desconto (**1,6**) e entra pouco no site (**3,1** visitas por mês). Sozinho, responde por **68%** de todo o gasto da base.
+- **Econômico (838 clientes):** a menor renda (**32.413**) e um gasto muito baixo (**68** em 2 anos; mediana **54**), com só **5 compras**. Tem crianças pequenas em casa (`Kidhome` **0,82**) e visita **muito** o site (**6,5 visitas por mês**), mas compra pouco por lá (**1,8** compras). Responde por só **4%** do gasto total da base.
+- **Caçador de ofertas (549 clientes):** renda intermediária (**51.900**) e gasto de **514**. É o grupo que **mais compra com desconto** (**3,8** compras com desconto, mais que o dobro dos outros dois, ambos com 1,8) e compra bastante pelo site (**5,5**, empatado com o Premium). Tem **adolescentes** em casa (`Teenhome` **0,78**). Responde por **21%** do gasto.
+- **Premium (825 clientes):** a maior renda (**71.852**) e o maior gasto (**1.217**), puxado por **vinhos** (570) e **carnes** (373). **59%** não têm filhos em casa. Compra muito na loja (**8,6**) e pelo catálogo (**5,4**), usa pouco desconto (**1,8**) e entra pouco no site (**3,4** visitas por mês). Sozinho, responde por **75%** de todo o gasto da base.
 
-Repare que `Recency` (dias desde a última compra) é parecida nos três segmentos (entre **46** e **54** dias): os grupos não se separam por "quem comprou recentemente", e sim por **quanto e como** compram.
+Repare que `Recency` (dias desde a última compra) é parecida nos três segmentos (entre **48** e **52** dias): os grupos não se separam por "quem comprou recentemente", e sim por **quanto e como** compram.
 
 ## Gráfico de perfil
 
@@ -1302,7 +916,7 @@ medias_pad |>
   labs(x = "Segmento", y = NULL, fill = "Média\npadronizada")
 ```
 
-O mapa confirma a leitura: o **Premium** é azul em todos os gastos, na renda e nas compras por catálogo e loja, e vermelho em `Filhos`, `NumDealsPurchases` e `NumWebVisitsMonth`. O **Econômico** é o "espelho" do Premium: vermelho em quase tudo e azul só em `Filhos` e `NumWebVisitsMonth`. O **Caçador de ofertas** se destaca em azul em `NumDealsPurchases` (**0,8**) e `NumWebPurchases` (**0,6**); nos gastos, fica acima da média em vinhos (**0,4**) e produtos "ouro" (**0,3**) e perto da média nas outras categorias.
+O mapa confirma a leitura: o **Premium** é azul em todos os gastos, na renda e nas compras por catálogo e loja, e vermelho em `Filhos`, `NumDealsPurchases` e `NumWebVisitsMonth`. O **Econômico** é o "espelho" do Premium: vermelho em quase tudo e azul só em `Filhos` e `NumWebVisitsMonth`. O **Caçador de ofertas** se destaca em azul em `NumDealsPurchases` (**0,8**) e em `NumWebPurchases` (**0,5**, como o Premium); nos gastos, fica acima da média em vinhos (**0,4**) e produtos "ouro" (**0,3**) e perto da média nas outras categorias.
 
 ## As fichas de segmento
 
@@ -1321,7 +935,7 @@ p <- perfil_segmentos
 resumos <- c(
   "Renda mais baixa e gasto muito baixo; famílias com crianças pequenas; visita bastante o site, mas compra pouco.",
   "Renda intermediária; o grupo que mais compra com desconto; compra bastante pelo site; famílias com adolescentes.",
-  "Renda alta e o maior gasto, puxado por vinhos e carnes; a maioria sem filhos em casa; compra na loja e pelo catálogo e quase não usa desconto.")
+  "Renda alta e o maior gasto, puxado por vinhos e carnes; a maioria sem filhos em casa; compra na loja e pelo catálogo e usa pouco desconto.")
 
 # Ação de marketing sugerida para cada segmento, na mesma ordem
 acoes <- c(
@@ -1352,16 +966,22 @@ for (i in seq_len(nrow(fichas))) {
 
 ## Os clientes-exemplo de cada segmento
 
-Como escolhemos o PAM, cada segmento tem o seu **medoide**: o cliente real que melhor representa o grupo. São os mesmos três clientes da seção 6, agora com o nome do segmento. Ligamos cada medoide ao segmento pelo número do grupo (a coluna `grupo`), e não "à mão".
+Uma tabela de médias é útil, mas o marketing entende melhor **uma pessoa**: "este é o cliente típico do segmento". Para cada segmento, escolhemos o **cliente mais parecido com o perfil médio do grupo**: calculamos a média de cada uma das 15 variáveis padronizadas dentro do segmento (o "cliente médio", que não existe de verdade) e procuramos o cliente real **mais perto** dessa média, com a mesma distância euclidiana de sempre. É a mesma conta dos "vizinhos mais próximos" da seção 3.
 
 ```{r}
-# Os medoides do PAM com o nome do segmento que cada um representa
-medoides |>
-  left_join(perfil_segmentos |> select(grupo, segmento), by = "grupo") |>
+# Para cada segmento: a linha da base do cliente mais perto do perfil médio do segmento
+posicao_exemplo <- sapply(levels(clientes_seg$segmento), function(s) {
+  linhas <- which(clientes_seg$segmento == s)        # clientes deste segmento
+  media <- colMeans(dados_pad[linhas, ])             # perfil médio (variáveis padronizadas)
+  dif <- sweep(dados_pad[linhas, ], 2, media)        # diferença de cada cliente até a média
+  linhas[which.min(sqrt(rowSums(dif^2)))]            # o cliente com a menor distância
+})
+
+# Os clientes-exemplo, com algumas variáveis fáceis de interpretar
+clientes_exemplo <- clientes_seg[posicao_exemplo, ] |>
   select(segmento, ID, Income, Idade, Filhos, Gasto_total, Compras_total,
-         NumDealsPurchases, NumWebPurchases, NumWebVisitsMonth) |>
-  arrange(segmento) |>
-  as.data.frame()
+         NumDealsPurchases, NumWebPurchases, NumWebVisitsMonth)
+as.data.frame(clientes_exemplo)
 ```
 
 Para apresentar ao marketing:
@@ -1369,8 +989,6 @@ Para apresentar ao marketing:
 - **Econômico:** o cliente **5267**, com renda de 33.986, 1 filho, gasto de **44** em 2 anos e **7 visitas ao site por mês**, mas só 1 compra pela internet.
 - **Caçador de ofertas:** o cliente **10260**, com renda de 45.143, 1 filho, gasto de **311**, **12 compras**, 3 delas com desconto.
 - **Premium:** o cliente **10383**, com renda de 70.287, **sem filhos**, gasto de **1.093** e **20 compras**.
-
-O medoide do Caçador de ofertas é o menos "típico" dos três: lembre que o grupo dele teve a menor silhueta (0,080), ou seja, muitos clientes estão perto da fronteira com os outros dois segmentos. É um segmento mais "misturado", e vale a pena o marketing testar as ações nele em pequena escala antes de expandir.
 
 ## Validação externa: os segmentos respondem diferente às campanhas?
 
@@ -1408,13 +1026,14 @@ resposta_por_segmento |>
   labs(x = "Segmento", y = "Proporção de clientes", fill = NULL)
 ```
 
-As taxas **crescem com o gasto**: aceitaram a última campanha **8,5%** dos Econômicos, **13,9%** dos Caçadores de ofertas e **23,6%** dos Premium (na base inteira, **15,1%**). Considerando as 6 campanhas, **13,7%**, **28,8%** e **41,3%** aceitaram pelo menos uma. Ou seja, os clientes Premium **aceitaram** a última campanha numa proporção cerca de **2,8 vezes** maior que os Econômicos: os segmentos, formados sem olhar para as campanhas, também diferem na aceitação, o que é um bom sinal de que capturam algo real.
+As taxas **crescem com o gasto**: aceitaram a última campanha **8,9%** dos Econômicos, **13,8%** dos Caçadores de ofertas e **22,1%** dos Premium (na base inteira, **15,1%**). Considerando as 6 campanhas, **14,2%**, **29,0%** e **39,5%** aceitaram pelo menos uma. Ou seja, os clientes Premium **aceitaram** a última campanha numa proporção cerca de **2,5 vezes** maior que os Econômicos: os segmentos, formados sem olhar para as campanhas, também diferem na aceitação, o que é um bom sinal de que capturam algo real.
 
 Dois cuidados ao ler esse resultado. Primeiro, ele é **mais fraco do que parece**: os segmentos foram montados, em boa parte, a partir do **gasto**, e é esperado que quem gasta mais também aceite mais ofertas. Uma diferença grande na aceitação era, portanto, o resultado previsível, e não uma surpresa. Segundo, isto é uma **associação**, e não o **efeito** da campanha: não sabemos se o Premium aceita mais **por causa** da campanha ou se compraria de qualquer jeito. Para medir o efeito, seria preciso um experimento (por exemplo, sortear quem recebe a campanha e comparar com quem não recebe), assunto para outra aula.
 
 ## Para fechar
 
 - Partimos de um problema de negócio (campanhas iguais para todos) e chegamos a **3 segmentos com nome, perfil, cliente-exemplo e ação**.
-- Cada escolha mudou o resultado e foi **mostrada**: quais variáveis entram, log e padronização, o *k* (cotovelo e silhueta não concordaram totalmente), a técnica (o PAM ganhou pela utilidade, não pela silhueta) e, no bônus, a régua.
-- As três técnicas acharam essencialmente **a mesma estrutura**, o que mostra que a divisão não depende muito da técnica. Mas as silhuetas baixas (abaixo de 0,25) lembram que as fronteiras são difusas: os segmentos são **tipos predominantes**, não caixas fechadas.
+- Cada escolha mudou o resultado e foi **mostrada**: quais variáveis entram, log e padronização, a **regra de ligação** (single, complete e average não serviram para esta base; o Ward, sim), o *k* (a árvore sugeria 2 ou 3) e a **régua** (euclidiana ou Gower).
+- Com a Gower, a ligação complete reencontrou essencialmente **a mesma divisão por gasto** do Ward euclidiano: a estrutura principal não depende da régua. Mas as fronteiras são difusas (os clientes formam um contínuo): os segmentos são **tipos predominantes**, não caixas fechadas.
 - A validação com as campanhas, que **não** entraram no agrupamento, mostrou que os segmentos também diferem na aceitação das campanhas. É uma associação (e esperada, já que os segmentos se separam pelo gasto), não uma medida do efeito das campanhas.
+- Existem outras técnicas de agrupamento (como o k-means e o k-medoides), que dividem a base sem construir uma árvore; elas ficam para outra aula.

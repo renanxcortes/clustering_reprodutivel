@@ -19,7 +19,7 @@ gastos |> mean() |> round(1)
 
 # Lista de pacotes usados na aula
 pacotes <- c("tidyverse",   # manipulação (dplyr), leitura (readr) e gráficos (ggplot2)
-             "cluster")     # pam() (k-medoides), silhouette() e daisy() (Gower)
+             "cluster")     # daisy() (distância de Gower)
 
 # Quais ainda não estão instalados?
 faltando <- pacotes[!sapply(pacotes, requireNamespace, quietly = TRUE)]
@@ -332,7 +332,7 @@ plot(hc_ward, labels = FALSE, hang = -1,
 # Alturas das 6 últimas fusões, da mais alta (a última, que junta tudo) para a mais baixa
 rev(tail(hc_ward$height, 6)) |> round(1)
 
-# Número de grupos (k): sugerido pelo dendrograma; conferido na seção 5
+# Número de grupos (k): sugerido pelo dendrograma
 k_escolhido <- 3L
 
 # Cortando a árvore em k grupos: um número de grupo (1, 2, 3...) para cada cliente
@@ -346,131 +346,6 @@ plot(hc_ward, labels = FALSE, hang = -1,
      main = "Dendrograma (Ward) cortado em 3 grupos", xlab = "Clientes", sub = "",
      ylab = "Altura da fusão")
 rect.hclust(hc_ward, k = k_escolhido, border = c("firebrick", "steelblue", "darkgreen"))
-
-# 5. K-means ----
-
-# Execução 1: um único sorteio inicial (nstart = 1), com a semente 1
-set.seed(1)
-km_semente1 <- kmeans(dados_pad, centers = k_escolhido, nstart = 1)
-
-# Execução 2: um único sorteio inicial, com a semente 6
-set.seed(6)
-km_semente6 <- kmeans(dados_pad, centers = k_escolhido, nstart = 1)
-
-# WSS total (tot.withinss) de cada execução: quanto menor, melhor
-km_semente1$tot.withinss
-km_semente6$tot.withinss
-
-# Função que roda o k-means para um valor de k e devolve a WSS e a silhueta média
-avaliar_k <- function(k) {
-  set.seed(2026)                                            # sorteio reprodutível
-  km_k <- kmeans(dados_pad, centers = k, nstart = 25)
-  # silhouette() precisa dos grupos e da matriz de distâncias;
-  # a coluna "sil_width" tem a silhueta de cada cliente
-  sil <- silhouette(km_k$cluster, dist_euc)
-  tibble(k = k,
-         wss = km_k$tot.withinss,
-         silhueta_media = mean(sil[, "sil_width"]))
-}
-
-# Aplicando a função para k = 2, 3, ..., 8 (map) e empilhando as linhas numa tabela (list_rbind)
-avaliacao_k <- map(2:8, avaliar_k) |> list_rbind()
-avaliacao_k
-
-# Gráfico do cotovelo: WSS em função de k
-avaliacao_k |>
-  ggplot(aes(x = k, y = wss)) +
-  geom_line(color = "steelblue") +
-  geom_point(size = 3, color = "steelblue") +
-  scale_x_continuous(breaks = 2:8) +
-  labs(x = "Número de grupos (k)", y = "WSS (soma de quadrados dentro dos grupos)")
-
-# Gráfico da silhueta média em função de k
-avaliacao_k |>
-  ggplot(aes(x = k, y = silhueta_media)) +
-  geom_line(color = "darkorange") +
-  geom_point(size = 3, color = "darkorange") +
-  scale_x_continuous(breaks = 2:8) +
-  labs(x = "Número de grupos (k)", y = "Silhueta média")
-
-# K-means final: k_escolhido grupos, 25 sorteios iniciais, semente fixa
-set.seed(2026)
-km <- kmeans(dados_pad, centers = k_escolhido, nstart = 25)
-
-# WSS da solução final (compare com as duas execuções com nstart = 1)
-km$tot.withinss
-
-# Quantas iterações (repetições dos passos 2 e 3) até estabilizar
-km$iter
-
-# Grupo de cada cliente e tamanho de cada grupo
-grupos_km <- km$cluster
-km$size
-
-# 6. K-medoides (PAM) ----
-
-# Gastos de 5 clientes: quatro parecidos e um outlier (5000)
-gastos_exemplo <- c(100, 120, 130, 150, 5000)
-
-# Centroide: a média (puxada pelo outlier)
-mean(gastos_exemplo)
-
-# Medoide: para cada cliente, somamos as distâncias até todos os outros...
-soma_dist <- sapply(gastos_exemplo, function(m) sum(abs(gastos_exemplo - m)))
-soma_dist
-
-# ...e o medoide é o cliente com a menor soma
-gastos_exemplo[which.min(soma_dist)]
-
-# PAM com k_escolhido grupos, a partir da matriz de distâncias euclidianas
-# (sem set.seed: o PAM não tem sorteio, o resultado é sempre o mesmo)
-pam_euc <- pam(dist_euc, k = k_escolhido)
-
-# Grupo de cada cliente (1, 2 ou 3)
-grupos_pam <- pam_euc$clustering
-
-# Quantos clientes em cada grupo?
-table(grupos_pam)
-
-# Posição (linha da base) dos clientes escolhidos como medoides
-pam_euc$id.med
-
-# As linhas da base que são medoides, com o número do grupo que cada uma representa
-medoides <- clientes[pam_euc$id.med, ] |>
-  mutate(grupo = seq_len(k_escolhido), .before = 1)
-
-# Os clientes-exemplo, com algumas variáveis fáceis de interpretar
-# (as.data.frame() mostra todas as colunas, sem esconder nenhuma)
-medoides |>
-  select(grupo, ID, Income, Idade, Filhos, Gasto_total, Compras_total,
-         NumWebPurchases, NumStorePurchases, NumWebVisitsMonth) |>
-  as.data.frame()
-
-# Centroide de cada grupo do PAM: a média de algumas variáveis originais
-clientes |>
-  mutate(grupo = grupos_pam) |>
-  group_by(grupo) |>
-  summarise(Income = mean(Income), Filhos = mean(Filhos),
-            Gasto_total = mean(Gasto_total)) |>
-  # arredondando: renda e gasto sem casas decimais, filhos com 2 casas
-  mutate(Income = round(Income), Filhos = round(Filhos, 2),
-         Gasto_total = round(Gasto_total))
-
-# Silhueta média geral
-pam_euc$silinfo$avg.width
-
-# Silhueta média de cada grupo
-pam_euc$silinfo$clus.avg.widths
-
-# Gráfico de silhueta: uma barra por cliente, ordenadas dentro de cada grupo
-# (barras abaixo de zero são clientes que talvez estejam no grupo errado)
-# silhouette() calcula a silhueta de cada cliente; plot() desenha (border = NA tira o contorno das barras)
-plot(silhouette(pam_euc), border = NA, col = c("steelblue", "firebrick", "darkgreen"),
-     main = "Silhueta de cada cliente (PAM, k = 3)",
-     xlab = "Largura da silhueta", sub = "")
-
-# Tabela cruzada: grupos do k-means (linhas) × grupos do PAM (colunas)
-table(kmeans = grupos_km, pam = grupos_pam)
 
 # 6b. Bônus: dados mistos e distância de Gower (pode pular) ----
 # ATENÇÃO: este bloco é OPCIONAL. Nenhuma seção seguinte usa objetos criados aqui.
@@ -521,69 +396,13 @@ mean(c(parcela_num, parcela_cat))
 # O valor calculado pela daisy() para o mesmo par (linha 1, coluna 3)
 as.matrix(dist_gower)[1, 3]
 
-# Hierárquico com a matriz de Gower e ligação média
-hc_gower <- hclust(dist_gower, method = "average")
-# (Ward com Gower só com ressalva, e não rodamos aqui:
-#  hclust(sqrt(dist_gower), method = "ward.D2"))
+# 6. Resultados para o negócio ----
 
-# Cortando a árvore em k grupos: quantos clientes em cada grupo?
-table(cutree(hc_gower, k = k_escolhido))
-
-# PAM com a matriz de Gower e o mesmo k (sem sorteio, sem set.seed)
-pam_gower <- pam(dist_gower, k = k_escolhido)
-
-# Tamanho dos grupos e silhueta média (calculada com a Gower)
-table(pam_gower$clustering)
-pam_gower$silinfo$avg.width
-
-# Tabela cruzada: PAM com Gower (linhas) × PAM euclidiano (colunas)
-tab_gower_vs_euc <- table(pam_gower = pam_gower$clustering, pam_euc = grupos_pam)
-tab_gower_vs_euc
-
-# Estado civil dentro de cada grupo do PAM com Gower
-table(pam_gower = pam_gower$clustering, estado_civil = clientes$Marital_Status)
-
-# ---- fim do bônus 6b ----
-
-# 7. Comparando as técnicas ----
-
-# Tabela cruzada: hierárquico (linhas) × k-means (colunas)
-# Lembre: "grupo 1" de uma técnica NÃO é o "grupo 1" da outra (os rótulos são arbitrários)
-table(hierarquico = grupos_hc, kmeans = grupos_km)
-
-# Tabela cruzada: k-means (linhas) × PAM (colunas), a mesma que vimos na seção 6
-table(kmeans = grupos_km, pam = grupos_pam)
-
-# Função: recebe os grupos de uma técnica e devolve a silhueta média
-# (silhouette() precisa dos grupos e da matriz de distâncias; a coluna "sil_width" é a silhueta de cada cliente)
-calc_silhueta <- function(grupos) {
-  mean(silhouette(grupos, dist_euc)[, "sil_width"])
-}
-
-# Tabela-resumo: uma linha por técnica, com a silhueta média e o tamanho dos grupos
-comparacao_tecnicas <- tibble(
-  tecnica = c("hierarquico", "kmeans", "pam"),
-  silhueta_media = c(calc_silhueta(grupos_hc),
-                     calc_silhueta(grupos_km),
-                     calc_silhueta(grupos_pam)),
-  # tamanhos dos grupos 1, 2 e 3, colados num texto só (ex.: "825 / 838 / 549")
-  tamanhos = c(paste(table(grupos_hc), collapse = " / "),
-               paste(table(grupos_km), collapse = " / "),
-               paste(table(grupos_pam), collapse = " / ")))
-
-comparacao_tecnicas
-
-# Técnica escolhida para entregar ao marketing (justificativa no texto)
-tecnica_final <- "pam"
-
-# Os grupos da técnica escolhida: um número de grupo para cada cliente
-# (se trocar a técnica, troque aqui também; e os medoides deixam de valer, pois são do PAM)
-grupos_final <- grupos_pam
+# Os grupos que vão para o marketing: os do Ward euclidiano (seção 4)
+grupos_final <- grupos_hc
 
 # Conferindo: tamanho de cada grupo
 table(grupos_final)
-
-# 8. Resultados para o negócio ----
 
 # PCA nos dados padronizados (as mesmas 15 variáveis do agrupamento)
 pca <- prcomp(dados_pad)
@@ -598,7 +417,7 @@ round(pca$rotation[, 1:2], 2)
 # Nomes dos segmentos, do MENOR para o MAIOR gasto total médio (a regra é explicada na próxima seção)
 nomes_segmentos <- c("Econômico", "Caçador de ofertas", "Premium")
 
-# Gasto total médio de cada grupo do PAM; rank() dá a posição do grupo (1 = menor gasto)
+# Gasto total médio de cada grupo do Ward; rank() dá a posição do grupo (1 = menor gasto)
 gasto_medio_grupo <- tapply(clientes$Gasto_total, grupos_final, mean)
 segmento_pca <- nomes_segmentos[rank(gasto_medio_grupo)[grupos_final]]
 
@@ -687,7 +506,7 @@ p <- perfil_segmentos
 resumos <- c(
   "Renda mais baixa e gasto muito baixo; famílias com crianças pequenas; visita bastante o site, mas compra pouco.",
   "Renda intermediária; o grupo que mais compra com desconto; compra bastante pelo site; famílias com adolescentes.",
-  "Renda alta e o maior gasto, puxado por vinhos e carnes; a maioria sem filhos em casa; compra na loja e pelo catálogo e quase não usa desconto.")
+  "Renda alta e o maior gasto, puxado por vinhos e carnes; a maioria sem filhos em casa; compra na loja e pelo catálogo e usa pouco desconto.")
 
 # Ação de marketing sugerida para cada segmento, na mesma ordem
 acoes <- c(
@@ -715,13 +534,19 @@ for (i in seq_len(nrow(fichas))) {
   cat("\n")
 }
 
-# Os medoides do PAM com o nome do segmento que cada um representa
-medoides |>
-  left_join(perfil_segmentos |> select(grupo, segmento), by = "grupo") |>
+# Para cada segmento: a linha da base do cliente mais perto do perfil médio do segmento
+posicao_exemplo <- sapply(levels(clientes_seg$segmento), function(s) {
+  linhas <- which(clientes_seg$segmento == s)        # clientes deste segmento
+  media <- colMeans(dados_pad[linhas, ])             # perfil médio (variáveis padronizadas)
+  dif <- sweep(dados_pad[linhas, ], 2, media)        # diferença de cada cliente até a média
+  linhas[which.min(sqrt(rowSums(dif^2)))]            # o cliente com a menor distância
+})
+
+# Os clientes-exemplo, com algumas variáveis fáceis de interpretar
+clientes_exemplo <- clientes_seg[posicao_exemplo, ] |>
   select(segmento, ID, Income, Idade, Filhos, Gasto_total, Compras_total,
-         NumDealsPurchases, NumWebPurchases, NumWebVisitsMonth) |>
-  arrange(segmento) |>
-  as.data.frame()
+         NumDealsPurchases, NumWebPurchases, NumWebVisitsMonth)
+as.data.frame(clientes_exemplo)
 
 # Taxas de aceite de campanhas em cada segmento
 # Response = aceitou a última campanha (0 ou 1); a média de 0/1 é a proporção de "sim"
