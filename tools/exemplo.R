@@ -19,8 +19,9 @@ exemplo_matriz <- function() {
   m
 }
 
-# Pontos do GIF do k-means: 3 nuvens de 15 clientes e 3 centros iniciais
-# escolhidos de propósito longe das nuvens, para a animação ter várias iterações
+# Pontos do GIF do k-means: 3 nuvens de 15 clientes. Os centros iniciais são
+# 3 clientes "sorteados" (dois na mesma nuvem), escolhidos para a animação ter
+# 5 iterações sem nenhum grupo vazio
 exemplo_gif <- function() {
   x <- withr::with_seed(2026, {
     centros <- rbind(c(2, 2), c(8, 3), c(5, 8))
@@ -28,7 +29,6 @@ exemplo_gif <- function() {
       cbind(rnorm(15, centros[i, 1], 1), rnorm(15, centros[i, 2], 1))))
   })
   colnames(x) <- c("renda", "gasto")
-  centros_iniciais <- rbind(c(1, 9), c(2, 8), c(3, 9))
-  colnames(centros_iniciais) <- c("renda", "gasto")
+  centros_iniciais <- x[c(26, 33, 34), ]
   list(x = x, centros_iniciais = centros_iniciais)
 }
