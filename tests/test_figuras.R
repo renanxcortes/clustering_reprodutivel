@@ -44,3 +44,8 @@ test_that("kmeans_passos não quebra com grupo vazio", {
   expect_false(anyNA(unlist(p$centros)))
   expect_equal(tail(p$centros, 1)[[1]][3, ], c(100, 100))
 })
+
+test_that("figuras estáticas existem", {
+  for (f in c("distancia_dois_clientes", "matriz_distancias", "ligacoes_regra", "ligacoes_passos"))
+    expect_true(file.exists(file.path(raiz, "figuras", paste0(f, ".png"))), info = f)
+})
