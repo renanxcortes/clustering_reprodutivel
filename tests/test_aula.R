@@ -164,3 +164,14 @@ test_that("README existe e cita a fonte dos dados", {
   rd <- paste(readLines(file.path(raiz, "README.md"), encoding = "UTF-8"), collapse = "\n")
   expect_match(rd, "LiaoliaoQJ/mkt"); expect_match(rd, "imakash3011")
 })
+
+test_that("texto das ligações não ensina nada errado", {
+  qmd <- paste(readLines(file.path(raiz, "aula_clustering.qmd"), encoding = "UTF-8"), collapse = "\n")
+  # Ward minimiza o AUMENTO do espalhamento, não o espalhamento do grupo resultante
+  expect_false(grepl("menos espalhado", qmd))
+  expect_gte(lengths(regmatches(qmd, gregexpr("menos aumenta", qmd))), 2)
+  # a última fusão não é a mesma nas quatro regras (no single é outra)
+  expect_false(grepl("a mesma fusão aparece", qmd))
+  # a complete separa 13 clientes, não "meia dúzia"
+  expect_false(grepl("meia dúzia", qmd))
+})

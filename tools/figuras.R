@@ -207,7 +207,7 @@ raios <- function(nomes, c0, cor) {
        annotate("point", x = c0[1], y = c0[2], shape = 4, size = 4, stroke = 1.6, colour = cor))
 }
 p_ward <- base_regra(
-  "Ward: o MENOS espalhado",
+  "Ward: o MENOR aumento\ndo espalhamento",
   paste0("aumento do espalhamento: vermelho ", fmt(aum_abc), "   azul ", fmt(aum_ef),
          "\nDiego vai para o AZUL"),
   c(raios(c("Ana", "Bruno", "Carla", "Diego"), c_abc, "firebrick"),
@@ -216,7 +216,7 @@ p_ward <- base_regra(
 fig3 <- (p_single | p_complete | p_average | p_ward) +
   plot_annotation(
     title = "Diego vai para qual grupo? Depende da regra de junção",
-    subtitle = "Vermelho = {Ana, Bruno, Carla}; azul = {Elisa, Fábio}. No Ward, o ✕ é o centro do grupo já com Diego.",
+    subtitle = "Vermelho = {Ana, Bruno, Carla}; azul = {Elisa, Fábio}. No Ward, o ✕ é o centro do grupo já com Diego e as linhas tracejadas mostram o espalhamento.",
     theme = theme(plot.title = element_text(face = "bold", size = 16)))
 salvar(fig3, "ligacoes_regra.png", largura = 16, altura = 5.6)
 

@@ -581,7 +581,7 @@ Nos três primeiros passos, as quatro regras concordam: Ana e Bruno são os mais
 - **single** (ligação simples): a distância entre dois grupos é a **menor** distância entre um cliente de um grupo e um cliente do outro (os "vizinhos mais próximos"). Diego está a 3,2 de Carla e a 3,6 de Elisa e de Fábio, então vai para o grupo vermelho (Ana, Bruno e Carla).
 - **complete** (ligação completa): é a **maior** distância entre os clientes dos dois grupos. Até o grupo vermelho, a maior é 5,0 (até Ana); até o azul, 3,6. Diego vai para o azul (Elisa e Fábio).
 - **average** (ligação média): é a **média** de todas as distâncias entre os clientes dos dois grupos. Até o vermelho, a média é 4,1; até o azul, 3,6. Diego vai para o azul.
-- **Ward**: não compara distâncias entre pares de clientes. Pergunta **qual fusão deixa o grupo resultante menos espalhado** em volta do seu centro (o "cliente médio" do grupo, marcado com ✕). Juntar Diego ao vermelho aumenta o espalhamento em 12,4; ao azul, em 8,3. Diego vai para o azul.
+- **Ward**: não compara distâncias entre pares de clientes. Mede o **espalhamento** de cada grupo (a soma das distâncias ao quadrado de cada cliente até o centro do grupo, o "cliente médio", marcado com ✕) e escolhe **a fusão que menos aumenta o espalhamento**. Juntar Diego ao vermelho aumenta o espalhamento em 12,4; ao azul, em 8,3. Diego vai para o azul. (O dendrograma do Ward usa uma escala diferente para as alturas, então esses números não aparecem nele como estão.)
 
 A matriz de distâncias é a mesma; só muda a regra, e já no passo 4 a árvore é outra. Conferindo no R:
 
@@ -606,7 +606,7 @@ plot(hc_exemplo$ward,     main = "Ward",     xlab = "", sub = "", ylab = "Altura
 par(mfrow = c(1, 1))   # volta a janela gráfica ao normal
 ```
 
-No single, Diego entra no ramo de Ana, Bruno e Carla; nas outras três regras, no ramo de Elisa e Fábio. Repare também nas **alturas**: como cada regra mede a distância entre grupos de um jeito, a mesma fusão aparece em alturas diferentes (a última fusão fica a 3,6 no single, 8,6 no complete, 6,5 no average e 11,1 no Ward).
+No single, Diego entra no ramo de Ana, Bruno e Carla; nas outras três regras, no ramo de Elisa e Fábio. Repare também nas **alturas**: como cada regra mede a distância entre grupos de um jeito, as alturas das fusões mudam de uma regra para outra (a última fusão fica a 3,6 no single, 8,6 no complete, 6,5 no average e 11,1 no Ward).
 
 ## E na base real?
 
@@ -624,11 +624,11 @@ table(cutree(hc_complete, k = 3))
 table(cutree(hc_average, k = 3))
 ```
 
-O resultado é decepcionante. Com a single, os grupos têm **2.208**, **3** e **1** cliente; com a complete, **2.199**, **9** e **4**; com a average, **2.205**, **4** e **3**. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam meia dúzia de clientes muito diferentes dos demais. O motivo é que esta base **não tem grupos bem separados**: os clientes formam um contínuo, sem "vazios" entre eles (voltaremos a isso na seção 5). A single sofre com o **encadeamento**: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando "grupos" quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.
+O resultado é decepcionante. Com a single, os grupos têm **2.208**, **3** e **1** cliente; com a complete, **2.199**, **9** e **4**; com a average, **2.205**, **4** e **3**. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam poucos clientes (de 4 a 13) muito diferentes dos demais. O motivo é que esta base **não tem grupos bem separados**: os clientes formam um contínuo, sem "vazios" entre eles (voltaremos a isso na seção 5). A single sofre com o **encadeamento**: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando "grupos" quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.
 
 ## A ligação de Ward
 
-É aqui que entra o **Ward**, a quarta regra da figura: em cada passo, ele junta os dois grupos que, unidos, ficam **menos espalhados** em volta do seu centro. Assim, evita fusões que criariam grupos grandes e espalhados e prefere formar **grupos compactos**, que é o que queremos para segmentar. (Essa ideia de "espalhamento em volta do centro" volta na seção 5, com o nome de WSS.) Em R, é o `method = "ward.D2"` (a versão de Ward que trabalha com as distâncias euclidianas como elas são).
+É aqui que entra o **Ward**, a quarta regra da figura: em cada passo, ele junta os dois grupos cuja fusão **menos aumenta o espalhamento** em volta dos centros. Assim, evita fusões que criariam grupos grandes e espalhados e prefere formar **grupos compactos**, que é o que queremos para segmentar. (Essa ideia de "espalhamento em volta do centro" volta na seção 5, com o nome de WSS.) Em R, é o `method = "ward.D2"` (a versão de Ward que trabalha com as distâncias euclidianas como elas são).
 
 ```{r}
 # Clustering hierárquico com a ligação de Ward, a partir da matriz de distâncias
