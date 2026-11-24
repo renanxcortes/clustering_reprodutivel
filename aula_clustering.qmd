@@ -697,6 +697,10 @@ O k-means não constrói uma árvore. Ele recebe o número de grupos *k* e procu
 3. **Recalcula** cada centro como o centroide (a média) dos clientes que caíram nele;
 4. **Repete** os passos 2 e 3 até ninguém mais trocar de grupo.
 
+A animação mostra o algoritmo em 45 clientes com 2 variáveis. Os ✕ são os centros: começam em 3 clientes sorteados (passo 1) e, a cada iteração, os clientes mudam de cor conforme o centro mais próximo (passo 2) e cada centro anda até a média do seu grupo (passo 3, a seta). Quando ninguém muda de cor, o algoritmo para.
+
+![O k-means passo a passo: atribuir cada cliente ao centro mais próximo e mover cada centro para a média do seu grupo, até ninguém mudar de grupo](figuras/kmeans_iteracoes.gif)
+
 Para medir se os grupos ficaram bons, usamos a **WSS** (*within sum of squares*, soma de quadrados dentro dos grupos): a soma das distâncias ao quadrado de cada cliente até o centroide do seu grupo. **Quanto menor a WSS, mais compactos os grupos.** O k-means tenta deixá-la a menor possível.
 
 ## O sorteio inicial importa: `nstart`
@@ -1016,7 +1020,7 @@ As duas contas dão o mesmo valor, **0,1996** (cerca de 0,20): os dois clientes 
 
 ## Hierárquico com Gower: ligação média
 
-Com a matriz de Gower, o cluster hierárquico funciona do mesmo jeito: só precisa das dissimilaridades entre os pares. Mas **trocamos a ligação**. O Ward foi pensado para a distância euclidiana (ele mede o "aumento da variação" com médias e quadrados), e a Gower não é euclidiana. Usamos a **ligação média** (`method = "average"`): a distância entre dois grupos é a **média de todas as dissimilaridades** entre um cliente de um grupo e um cliente do outro. Ela usa só as dissimilaridades, então serve para qualquer régua.
+Com a matriz de Gower, o cluster hierárquico funciona do mesmo jeito: só precisa das dissimilaridades entre os pares. Mas **trocamos a ligação**. O Ward foi pensado para a distância euclidiana (ele mede o "aumento da variação" com médias e quadrados), e a Gower não é euclidiana. Usamos a **ligação média** (`method = "average"`, a regra do painel *average* da figura da seção 4): a distância entre dois grupos é a **média de todas as dissimilaridades** entre um cliente de um grupo e um cliente do outro. Ela usa só as dissimilaridades, então serve para qualquer régua.
 
 > **Nota (não vamos rodar):** há quem use o Ward com a Gower depois de tirar a raiz quadrada das dissimilaridades, `hclust(sqrt(dist_gower), method = "ward.D2")`, porque a raiz deixa a Gower "mais parecida" com uma distância euclidiana. Funciona na prática, mas é uma adaptação, e não o uso para o qual o Ward foi criado. Por isso o deixamos de fora.
 

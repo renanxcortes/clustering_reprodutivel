@@ -11,7 +11,7 @@ Somos a **equipe de dados de uma rede de varejo**. Hoje, toda campanha de market
 1. **Estatísticas descritivas** (ggplot2): renda, gasto total e por categoria, canais de compra, filhos, escolaridade e estado civil. Cada gráfico responde a uma pergunta de marketing e revela um problema dos dados.
 2. **Preparação dos dados**: limpeza (renda ausente, renda extrema, anos de nascimento impossíveis, categorias sem sentido), variáveis derivadas, escolha das variáveis do agrupamento, **logaritmo** nos gastos e **padronização** (com um experimento que mostra por que ela é necessária).
 3. **Três técnicas de agrupamento**, todas com as mesmas 15 variáveis, a mesma distância euclidiana e o mesmo *k*:
-   - **cluster hierárquico** (ligação de Ward) e o dendrograma;
+   - **cluster hierárquico**: a matriz de distâncias e as ligações **single, complete e average** num exemplo de 6 clientes (com figuras), por que elas falham nesta base, e a **ligação de Ward**, com o dendrograma;
    - **k-means**, o papel do `nstart` e a escolha do *k* pelo cotovelo e pela silhueta;
    - **k-medoides (PAM)**, o medoide como "cliente-exemplo" e a robustez a outliers.
 4. **Bônus (pode pular):** dados mistos e **distância de Gower**, com o hierárquico (ligação média) e o PAM, e por que o k-means não aceita Gower.
@@ -52,7 +52,10 @@ As campanhas (`AcceptedCmp*`, `Response`) e `Complain` **não entram** no agrupa
 | `aula_clustering.qmd` | **Fonte única** do material (Quarto). O `.R` e o `.html` são gerados a partir dele |
 | `marketing_campaign.csv` | Os dados |
 | `tools/build.R` | Gera o `.R` (via `knitr::purl`) e o `.html` (via Quarto) a partir do `.qmd` |
-| `tests/test_aula.R` | Testes automáticos do material |
+| `tools/figuras.R` | Gera as figuras e o GIF de `figuras/` (rodar só quando mudar alguma figura) |
+| `tools/exemplo.R`, `tools/kmeans_passos.R` | Dados de exemplo e k-means passo a passo, usados pelo `figuras.R` |
+| `figuras/` | Figuras da aula (bonequinhos, ligações, GIF do k-means), já prontas |
+| `tests/test_aula.R`, `tests/test_figuras.R` | Testes automáticos do material |
 
 ## Como rodar (alunos)
 
@@ -69,18 +72,25 @@ Requisitos: R ≥ 4.5. O script completo roda em alguns segundos.
 >   packageVersion("tidyverse") >= "2.0.0"                # TRUE (dmy() e list_rbind() exigem tidyverse >= 2.0 / purrr >= 1.0)
 >   ```
 > - O bloco **6b (bônus: distância de Gower) pode ser pulado** se o tempo estiver curto. Nenhuma seção seguinte usa objetos criados nele. No script, ele vai da linha `# 6b. Bônus ...` até `# ---- fim do bônus 6b ----`.
-> - Se o tempo apertar, outros trechos que dá para pular ou só comentar rapidamente (além do 6b): o "Um mínimo de R para começar" (seção 1), o histograma do `log1p`, a tabela de centroides e o exemplo de `dist` com 3 clientes.
+> - Se o tempo apertar, outros trechos que dá para pular ou só comentar rapidamente (além do 6b): o "Um mínimo de R para começar" (seção 1), o histograma do `log1p`, a tabela de centroides e o exemplo de `dist` com 3 clientes. Na seção 4, os blocos do exemplo de 6 clientes (a matriz e os 4 dendrogramas) e o "E na base real?" podem ser só mostrados e comentados com as figuras.
 
 ## Como editar o material (professor)
 
 O `.qmd` é a fonte. **Não edite `aula_clustering.R` à mão**, porque ele é sobrescrito pelo build. Depois de alterar o `.qmd`, rode a partir desta pasta:
 
 ```bash
-Rscript tools/build.R                              # gera aula_clustering.R e aula_clustering.html
-Rscript -e 'testthat::test_file("tests/test_aula.R")'  # roda os testes
+Rscript tools/build.R                                    # gera aula_clustering.R e aula_clustering.html
+Rscript -e 'testthat::test_file("tests/test_aula.R")'     # testes da aula
+Rscript -e 'testthat::test_file("tests/test_figuras.R")'  # testes do exemplo e das figuras
 ```
 
 O build usa o Quarto do PATH. Se ele não estiver no PATH, usa o Quarto que vem com o RStudio.
+
+As figuras de `figuras/` (bonequinhos, ligações e o GIF do k-means) **não** são geradas pelo build. Se mudar o exemplo de 6 clientes (`tools/exemplo.R`, que também está digitado no `.qmd`) ou o visual de alguma figura, rode antes do build:
+
+```bash
+Rscript tools/figuras.R   # exige ggplot2, patchwork e gifski (este só na sua máquina, não no laboratório)
+```
 
 Os testes verificam, entre outras coisas:
 - a leitura dos dados (2.240 × 29, MD5 do arquivo) e a mensagem de erro quando o aluno está na pasta errada;

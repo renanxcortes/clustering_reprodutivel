@@ -42,6 +42,14 @@ test_that("descritiva gera gráficos no HTML", {
   expect_gte(sum(lengths(regmatches(html, gregexpr("<img", html)))), 5)
 })
 
+test_that("figuras citadas no qmd existem", {
+  qmd <- paste(readLines(file.path(raiz, "aula_clustering.qmd"), encoding = "UTF-8"), collapse = "\n")
+  figs <- unique(regmatches(qmd, gregexpr("figuras/[A-Za-z0-9_]+[.](png|gif)", qmd))[[1]])
+  expect_true("figuras/kmeans_iteracoes.gif" %in% figs)
+  expect_gte(length(figs), 5)
+  for (f in figs) expect_true(file.exists(file.path(raiz, f)), info = f)
+})
+
 test_that("limpeza e preparação", {
   expect_equal(nrow(env$clientes), 2212L)   # 2240 - 24 NA - 1 renda alta - 3 nascidos < 1920 (conferido no R em 2026-11-17)
   expect_false(anyNA(env$clientes[env$vars_cluster]))
