@@ -65,6 +65,21 @@ test_that("hierárquico e k-means", {
   expect_gte(env$km$iter, 1); expect_equal(length(env$km$size), env$k_escolhido)
 })
 
+
+test_that("exemplo do qmd é o mesmo das figuras", {
+  source(file.path(raiz, "tools", "exemplo.R"), local = TRUE)
+  expect_equal(as.data.frame(env$exemplo), as.data.frame(exemplo_clientes()))
+  expect_setequal(names(env$hc_exemplo), c("single", "complete", "average", "ward"))
+})
+
+test_that("single, complete e average falham na base real", {
+  n <- nrow(env$clientes)
+  for (h in list(env$hc_single, env$hc_complete, env$hc_average))
+    expect_gt(max(table(cutree(h, k = 3))) / n, 0.9)
+  expect_equal(c(env$hc_single$method, env$hc_complete$method, env$hc_average$method),
+               c("single", "complete", "average"))
+})
+
 test_that("PAM", {
   expect_s3_class(env$pam_euc, "pam")
   expect_length(env$grupos_pam, nrow(env$clientes))

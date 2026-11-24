@@ -262,6 +262,22 @@ dim(dados_pad)
 
 # 4. Cluster hierárquico ----
 
+# Exemplo de brinquedo: 6 clientes com 2 variáveis (renda e gasto, de 0 a 10)
+exemplo <- tibble(
+  nome  = c("Ana", "Bruno", "Carla", "Diego", "Elisa", "Fábio"),
+  renda = c(2, 3, 3, 6, 8, 9),
+  gasto = c(2, 2, 4, 5, 8, 7)
+)
+exemplo
+
+# Matriz só com as duas variáveis, com o nome de cada cliente nas linhas
+m_exemplo <- as.matrix(exemplo[, c("renda", "gasto")])
+rownames(m_exemplo) <- exemplo$nome
+
+# Matriz de distâncias dos 6 clientes (arredondada em 1 casa)
+dist_exemplo <- dist(m_exemplo)
+round(dist_exemplo, 1)
+
 # Matriz de distâncias de apenas 3 clientes (as 3 primeiras linhas de dados_pad)
 dist(dados_pad[1:3, ]) |> round(2)
 
@@ -274,6 +290,32 @@ dist_euc <- dist(dados_pad)
 
 # Quantas distâncias foram calculadas? (um número para cada par de clientes)
 length(dist_euc)
+
+# As quatro regras de ligação aplicadas aos 6 clientes
+hc_exemplo <- list(
+  single   = hclust(dist_exemplo, method = "single"),
+  complete = hclust(dist_exemplo, method = "complete"),
+  average  = hclust(dist_exemplo, method = "average"),
+  ward     = hclust(dist_exemplo, method = "ward.D2")
+)
+
+# Os quatro dendrogramas na mesma janela (dividida em 2 linhas e 2 colunas)
+par(mfrow = c(2, 2))
+plot(hc_exemplo$single,   main = "single",   xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_exemplo$complete, main = "complete", xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_exemplo$average,  main = "average",  xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_exemplo$ward,     main = "Ward",     xlab = "", sub = "", ylab = "Altura da fusão")
+par(mfrow = c(1, 1))   # volta a janela gráfica ao normal
+
+# As três ligações "intuitivas" na base real
+hc_single   <- hclust(dist_euc, method = "single")
+hc_complete <- hclust(dist_euc, method = "complete")
+hc_average  <- hclust(dist_euc, method = "average")
+
+# Tamanhos dos grupos quando cortamos cada árvore em 3 grupos
+table(cutree(hc_single, k = 3))
+table(cutree(hc_complete, k = 3))
+table(cutree(hc_average, k = 3))
 
 # Clustering hierárquico com a ligação de Ward, a partir da matriz de distâncias
 hc_ward <- hclust(dist_euc, method = "ward.D2")

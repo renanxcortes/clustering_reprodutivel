@@ -515,11 +515,39 @@ Agora sim vamos agrupar. Todas as técnicas desta aula partem da mesma pergunta:
 
 A **distância euclidiana** é a régua que já usamos na seção 3: para dois clientes, calculamos a diferença em cada uma das 15 variáveis padronizadas, elevamos ao quadrado, somamos e tiramos a raiz (o "Pitágoras" com 15 lados). A função `dist()` faz essa conta para **todos os pares de clientes** de uma vez e guarda o resultado numa **matriz de distâncias**: uma tabela em que a linha *i* e a coluna *j* dizem a distância entre o cliente *i* e o cliente *j*.
 
-Vamos ver com só **3 clientes** antes de usar a base inteira.
+Para enxergar a ideia, começamos com um exemplo de brinquedo: **6 clientes** com só **2 variáveis** (renda e gasto, numa escala de 0 a 10), para que caibam num gráfico. Com 2 variáveis, a distância entre dois clientes é o comprimento da linha reta que os liga:
+
+![A distância entre Ana e Diego é a hipotenusa de um triângulo retângulo: 4 de diferença na renda e 3 no gasto dão distância 5.](figuras/distancia_dois_clientes.png)
+
+Fazendo essa conta para **todos os pares** (com 6 clientes, são 15 pares), montamos a **matriz de distâncias**:
+
+![Os 6 clientes e a matriz de distâncias entre eles](figuras/matriz_distancias.png)
+
+Vamos montar o mesmo exemplo no R e pedir a matriz com `dist()`:
 
 ```{r}
 # 4. Cluster hierárquico ----
 
+# Exemplo de brinquedo: 6 clientes com 2 variáveis (renda e gasto, de 0 a 10)
+exemplo <- tibble(
+  nome  = c("Ana", "Bruno", "Carla", "Diego", "Elisa", "Fábio"),
+  renda = c(2, 3, 3, 6, 8, 9),
+  gasto = c(2, 2, 4, 5, 8, 7)
+)
+exemplo
+
+# Matriz só com as duas variáveis, com o nome de cada cliente nas linhas
+m_exemplo <- as.matrix(exemplo[, c("renda", "gasto")])
+rownames(m_exemplo) <- exemplo$nome
+
+# Matriz de distâncias dos 6 clientes (arredondada em 1 casa)
+dist_exemplo <- dist(m_exemplo)
+round(dist_exemplo, 1)
+```
+
+Os números são os da figura: Ana e Diego estão a **5,0**, Ana e Bruno (os mais próximos) a **1,0**. Com os clientes de verdade, a conta é a mesma, só que com 15 variáveis em vez de 2. Vamos ver com só **3 clientes** antes de usar a base inteira.
+
+```{r}
 # Matriz de distâncias de apenas 3 clientes (as 3 primeiras linhas de dados_pad)
 dist(dados_pad[1:3, ]) |> round(2)
 
@@ -540,9 +568,67 @@ length(dist_euc)
 
 São **2.445.366 distâncias** (2.212 × 2.211 / 2 pares). Por isso o clustering hierárquico fica pesado em bases muito grandes: o número de pares cresce muito rápido com o número de clientes.
 
+## Como juntar dois grupos? Quatro regras
+
+O cluster **hierárquico aglomerativo** começa com **cada cliente sozinho no seu próprio grupo** e, a cada passo, **junta os dois grupos mais próximos**, até sobrar um grupo só com todo mundo. Enquanto cada grupo tem um cliente só, "os mais próximos" é fácil: é a menor distância da matriz. Mas quando um grupo já tem vários clientes, **qual é a distância entre dois grupos?** Há várias regras para responder, chamadas de **ligações**. Veja a construção da árvore com os 6 clientes:
+
+![Os passos do agrupamento hierárquico com os 6 clientes e os dendrogramas das quatro regras](figuras/ligacoes_passos.png)
+
+Nos três primeiros passos, as quatro regras concordam: Ana e Bruno são os mais próximos (1,0), depois Elisa e Fábio (1,4), e Carla entra no grupo de Ana e Bruno. No passo 4, a pergunta é: **Diego, que está no meio do caminho, vai para qual grupo?** Aqui as regras discordam:
+
+![A regra de cada ligação para decidir o grupo de Diego](figuras/ligacoes_regra.png)
+
+- **single** (ligação simples): a distância entre dois grupos é a **menor** distância entre um cliente de um grupo e um cliente do outro (os "vizinhos mais próximos"). Diego está a 3,2 de Carla e a 3,6 de Elisa e de Fábio, então vai para o grupo vermelho (Ana, Bruno e Carla).
+- **complete** (ligação completa): é a **maior** distância entre os clientes dos dois grupos. Até o grupo vermelho, a maior é 5,0 (até Ana); até o azul, 3,6. Diego vai para o azul (Elisa e Fábio).
+- **average** (ligação média): é a **média** de todas as distâncias entre os clientes dos dois grupos. Até o vermelho, a média é 4,1; até o azul, 3,6. Diego vai para o azul.
+- **Ward**: não compara distâncias entre pares de clientes. Pergunta **qual fusão deixa o grupo resultante menos espalhado** em volta do seu centro (o "cliente médio" do grupo, marcado com ✕). Juntar Diego ao vermelho aumenta o espalhamento em 12,4; ao azul, em 8,3. Diego vai para o azul.
+
+A matriz de distâncias é a mesma; só muda a regra, e já no passo 4 a árvore é outra. Conferindo no R:
+
+```{r}
+#| fig-cap: "Dendrogramas dos 6 clientes com as quatro regras de ligação"
+#| fig-height: 7
+
+# As quatro regras de ligação aplicadas aos 6 clientes
+hc_exemplo <- list(
+  single   = hclust(dist_exemplo, method = "single"),
+  complete = hclust(dist_exemplo, method = "complete"),
+  average  = hclust(dist_exemplo, method = "average"),
+  ward     = hclust(dist_exemplo, method = "ward.D2")
+)
+
+# Os quatro dendrogramas na mesma janela (dividida em 2 linhas e 2 colunas)
+par(mfrow = c(2, 2))
+plot(hc_exemplo$single,   main = "single",   xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_exemplo$complete, main = "complete", xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_exemplo$average,  main = "average",  xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_exemplo$ward,     main = "Ward",     xlab = "", sub = "", ylab = "Altura da fusão")
+par(mfrow = c(1, 1))   # volta a janela gráfica ao normal
+```
+
+No single, Diego entra no ramo de Ana, Bruno e Carla; nas outras três regras, no ramo de Elisa e Fábio. Repare também nas **alturas**: como cada regra mede a distância entre grupos de um jeito, a mesma fusão aparece em alturas diferentes (a última fusão fica a 3,6 no single, 8,6 no complete, 6,5 no average e 11,1 no Ward).
+
+## E na base real?
+
+Agora, as três primeiras regras nos 2.212 clientes (a mesma `dist_euc`), cortando cada árvore em 3 grupos:
+
+```{r}
+# As três ligações "intuitivas" na base real
+hc_single   <- hclust(dist_euc, method = "single")
+hc_complete <- hclust(dist_euc, method = "complete")
+hc_average  <- hclust(dist_euc, method = "average")
+
+# Tamanhos dos grupos quando cortamos cada árvore em 3 grupos
+table(cutree(hc_single, k = 3))
+table(cutree(hc_complete, k = 3))
+table(cutree(hc_average, k = 3))
+```
+
+O resultado é decepcionante. Com a single, os grupos têm **2.208**, **3** e **1** cliente; com a complete, **2.199**, **9** e **4**; com a average, **2.205**, **4** e **3**. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam meia dúzia de clientes muito diferentes dos demais. O motivo é que esta base **não tem grupos bem separados**: os clientes formam um contínuo, sem "vazios" entre eles (voltaremos a isso na seção 5). A single sofre com o **encadeamento**: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando "grupos" quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.
+
 ## A ligação de Ward
 
-O cluster **hierárquico aglomerativo** começa com **cada cliente sozinho no seu próprio grupo** e, a cada passo, **junta os dois grupos mais parecidos**, até sobrar um grupo só com todo mundo. Falta dizer o que é "os dois grupos mais parecidos". Usamos o **método de Ward**: em cada passo, ele junta o par de grupos que **menos aumenta a variação dentro dos grupos**, ou seja, prefere fusões que mantêm os grupos compactos. Em R, é o `method = "ward.D2"` (a versão de Ward que trabalha com as distâncias euclidianas como elas são).
+É aqui que entra o **Ward**, a quarta regra da figura: em cada passo, ele junta os dois grupos que, unidos, ficam **menos espalhados** em volta do seu centro. Assim, evita fusões que criariam grupos grandes e espalhados e prefere formar **grupos compactos**, que é o que queremos para segmentar. (Essa ideia de "espalhamento em volta do centro" volta na seção 5, com o nome de WSS.) Em R, é o `method = "ward.D2"` (a versão de Ward que trabalha com as distâncias euclidianas como elas são).
 
 ```{r}
 # Clustering hierárquico com a ligação de Ward, a partir da matriz de distâncias
