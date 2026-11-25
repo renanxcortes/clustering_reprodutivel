@@ -21,7 +21,7 @@ Somos a **equipe de dados de uma rede de varejo**. Hoje, toda campanha de market
 
 ## Os dados
 
-`marketing_campaign.csv` é a base *Customer Personality Analysis*, do Kaggle ([imakash3011/customer-personality-analysis](https://www.kaggle.com/datasets/imakash3011/customer-personality-analysis)). A cópia usada aqui foi baixada do espelho público `https://raw.githubusercontent.com/LiaoliaoQJ/mkt/main/marketing_campaign%202.csv` (MD5 `3b624fc2bdbe29fa5fb01bdd577f78cd`). São **2.240 clientes** e **29 colunas**. Apesar da extensão `.csv`, o arquivo é **separado por TAB**, por isso o script usa `read_tsv()`. A moeda não é informada na fonte, então os valores aparecem como "unidades monetárias". O arquivo já está na pasta: **nada é baixado durante a aula**.
+`marketing_campaign.csv` é a base *Customer Personality Analysis*, do Kaggle ([imakash3011/customer-personality-analysis](https://www.kaggle.com/datasets/imakash3011/customer-personality-analysis)). A cópia usada aqui foi baixada do espelho público `https://raw.githubusercontent.com/LiaoliaoQJ/mkt/main/marketing_campaign%202.csv` (MD5 `3b624fc2bdbe29fa5fb01bdd577f78cd`). São **2.240 clientes** e **29 colunas**. Apesar da extensão `.csv`, o arquivo é **separado por TAB**, por isso o script usa `read_tsv()`. A moeda não é informada na fonte; **vamos supor que os valores monetários (renda e gastos) estão em dólares (US$)**, e é assim que eles aparecem nas aulas. O arquivo já está na pasta: **nada é baixado durante a aula**.
 
 | Variável | Significado |
 |---|---|
@@ -29,13 +29,13 @@ Somos a **equipe de dados de uma rede de varejo**. Hoje, toda campanha de market
 | `Year_Birth` | ano de nascimento |
 | `Education` | escolaridade (Basic, 2n Cycle, Graduation, Master, PhD) |
 | `Marital_Status` | estado civil |
-| `Income` | renda anual da família (24 valores ausentes) |
+| `Income` | renda anual da família, em US$ (24 valores ausentes) |
 | `Kidhome`, `Teenhome` | número de crianças e de adolescentes em casa |
 | `Dt_Customer` | data de cadastro como cliente |
 | `Recency` | dias desde a última compra |
-| `MntWines`, `MntFruits`, `MntMeatProducts`, `MntFishProducts`, `MntSweetProducts`, `MntGoldProds` | gasto nos últimos 2 anos com vinhos, frutas, carnes, peixes, doces e produtos "ouro" |
+| `MntWines`, `MntFruits`, `MntMeatProducts`, `MntFishProducts`, `MntSweetProducts`, `MntGoldProds` | montantes (`Mnt` = "Montante") gastos em compras nos últimos 2 anos com vinhos, frutas, carnes, peixes, doces e produtos "ouro" (`MntGoldProds`: itens de luxo, a linha *premium* da empresa, em contraste com os produtos do dia a dia) |
 | `NumDealsPurchases` | compras feitas com desconto |
-| `NumWebPurchases`, `NumCatalogPurchases`, `NumStorePurchases` | compras pelo site, pelo catálogo e na loja |
+| `NumWebPurchases`, `NumCatalogPurchases`, `NumStorePurchases` | compras pelo site, pelo catálogo e na loja (catálogo = pedido à distância a partir de uma revista ou folheto com códigos e preços, como nas revistas da Natura, Avon ou Boticário) |
 | `NumWebVisitsMonth` | visitas ao site no último mês |
 | `AcceptedCmp1` a `AcceptedCmp5` | aceitou a 1ª, ..., 5ª campanha (1 = sim) |
 | `Response` | aceitou a última campanha (1 = sim) |

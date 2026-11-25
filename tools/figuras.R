@@ -99,8 +99,11 @@ fig1 <- ggplot() +
   annotate("label", x = diego$renda + 0.3, y = (ana$gasto + diego$gasto) / 2,
            label = "diferença no gasto:\n5 − 2 = 3", colour = "darkgreen", size = 3.8,
            hjust = 0, linewidth = 0) +
-  annotate("label", x = 2.6, y = 6.3, label = "distância = √(4² + 3²) = 5",
-           colour = "firebrick", fontface = "bold", size = 4.3, linewidth = 0) +
+  # plotmath (parse = TRUE) desenha a raiz com a barra por cima, sem cortar
+  annotate("label", x = 2.6, y = 6.3,
+           label = '"distância" == sqrt(4^2 + 3^2) ~ "=" ~ 5', parse = TRUE,
+           colour = "firebrick", fontface = "bold", size = 4.3, linewidth = 0,
+           label.padding = unit(0.45, "lines")) +
   camada_bonequinhos(rbind(ana, diego)) +
   eixos_plano() +
   labs(title = "Distância entre Ana e Diego",

@@ -56,9 +56,10 @@ clientes_raw |>
 clientes_raw |>
   ggplot(aes(x = Income)) +
   geom_histogram(bins = 40, fill = "steelblue", color = "white", na.rm = TRUE) +
-  labs(x = "Renda anual (unidades monetárias)", y = "Número de clientes")
+  labs(x = "Renda anual (US$)", y = "Número de clientes")
 
-# Gasto total = soma das seis colunas de valor gasto (as que começam com "Mnt")
+# Gasto total = soma das seis colunas de valor gasto (as que começam com "Mnt", de "Montante")
+# Obs.: MntGoldProds = produtos "ouro", ou seja, os itens de luxo (linha premium)
 gasto_total_tmp <- clientes_raw |>
   mutate(gasto_total = MntWines + MntFruits + MntMeatProducts +
            MntFishProducts + MntSweetProducts + MntGoldProds)
@@ -67,11 +68,24 @@ gasto_total_tmp <- clientes_raw |>
 gasto_total_tmp |>
   ggplot(aes(x = gasto_total)) +
   geom_histogram(bins = 40, fill = "darkorange", color = "white") +
-  labs(x = "Gasto total (unidades monetárias)", y = "Número de clientes")
+  labs(x = "Gasto total (US$)", y = "Número de clientes")
 
 # Comparando mediana e média do gasto total
 gasto_total_tmp |>
   summarise(mediana = median(gasto_total), media = mean(gasto_total))
+
+# Só para o gráfico: sem renda ausente e sem a renda extrema
+renda_gasto_tmp <- gasto_total_tmp |>
+  filter(!is.na(Income), Income <= 200000)
+
+# Gráfico de dispersão: um ponto por cliente (alpha deixa os pontos semitransparentes)
+renda_gasto_tmp |>
+  ggplot(aes(x = Income, y = gasto_total)) +
+  geom_point(alpha = 0.3, color = "steelblue") +
+  labs(x = "Renda anual (US$)", y = "Gasto total em 2 anos (US$)")
+
+# Correlação entre renda e gasto (de -1 a 1; perto de 1 = sobem juntos)
+cor(renda_gasto_tmp$Income, renda_gasto_tmp$gasto_total)
 
 # Gasto médio de cada categoria, em formato "longo" (uma linha por cliente e categoria)
 gasto_categoria <- clientes_raw |>
@@ -81,58 +95,74 @@ gasto_categoria <- clientes_raw |>
   group_by(categoria) |>                                # um grupo por categoria
   summarise(gasto_medio = mean(gasto))                  # média por categoria
 
-# Gráfico de barras, ordenado do menor para o maior gasto médio
+# Gráfico de barras, ordenado do menor para o maior gasto médio,
+# com o valor escrito na ponta de cada barra (geom_text)
 gasto_categoria |>
   ggplot(aes(x = reorder(categoria, gasto_medio), y = gasto_medio)) +
   geom_col(fill = "steelblue") +
+  geom_text(aes(label = round(gasto_medio, 1)), hjust = -0.15) +
   coord_flip() +                                        # barras na horizontal
-  labs(x = "Categoria", y = "Gasto médio por cliente (unidades monetárias)")
+  expand_limits(y = 350) +                              # espaço para o número da maior barra
+  labs(x = "Categoria", y = "Gasto médio por cliente (US$)")
 
-# A mesma informação em números
-gasto_categoria |> arrange(desc(gasto_medio))
-
-# Média de compras em cada canal (NumDealsPurchases = compras feitas com desconto)
+# Média de compras em cada canal (NumDealsPurchases = compras feitas com desconto;
+# NumCatalogPurchases = pedidos à distância pelo catálogo, como nas revistas da Natura/Avon/Boticário)
 compras_canal <- clientes_raw |>
   select(NumStorePurchases, NumWebPurchases, NumCatalogPurchases, NumDealsPurchases) |>
   pivot_longer(everything(), names_to = "canal", values_to = "compras") |>
   group_by(canal) |>
   summarise(compras_medias = mean(compras))
 
-# Gráfico de barras com a média de compras por canal
+# Gráfico de barras com a média de compras por canal (e o valor na ponta da barra)
 compras_canal |>
   ggplot(aes(x = reorder(canal, compras_medias), y = compras_medias)) +
   geom_col(fill = "darkgreen") +
+  geom_text(aes(label = round(compras_medias, 2)), hjust = -0.15) +
   coord_flip() +
+  expand_limits(y = 6.5) +
   labs(x = "Canal", y = "Número médio de compras por cliente")
 
-# A mesma informação em números
-compras_canal |> arrange(desc(compras_medias))
+# Quantos clientes têm compras com desconto <= soma dos três canais? (veja o quadro abaixo)
+clientes_raw |>
+  count(desconto_cabe_nos_canais = NumDealsPurchases <=
+          NumWebPurchases + NumCatalogPurchases + NumStorePurchases)
 
-# Total de filhos em casa (crianças + adolescentes)
-filhos_tmp <- clientes_raw |>
-  mutate(filhos = Kidhome + Teenhome)
+# Contando os clientes por total de filhos em casa (crianças + adolescentes)
+filhos_contagem <- clientes_raw |>
+  count(filhos = Kidhome + Teenhome)
 
-# Gráfico de barras do número de filhos
-filhos_tmp |>
-  ggplot(aes(x = factor(filhos))) +
-  geom_bar(fill = "purple4") +
+# Gráfico de barras com a contagem escrita em cima de cada barra
+filhos_contagem |>
+  ggplot(aes(x = factor(filhos), y = n)) +
+  geom_col(fill = "purple4") +
+  geom_text(aes(label = n), vjust = -0.4) +
   labs(x = "Filhos em casa", y = "Número de clientes")
 
-# Em números
-filhos_tmp |> count(filhos)
+# Contando os clientes por nível de escolaridade (Education)
+escolaridade_contagem <- clientes_raw |>
+  count(Education)
 
-# Gráfico de barras do nível de escolaridade (Education), ordenado pela frequência
-clientes_raw |>
-  ggplot(aes(x = reorder(Education, Education, length))) +
-  geom_bar(fill = "firebrick") +
+# Barras ordenadas pela frequência, com a contagem na ponta de cada barra
+escolaridade_contagem |>
+  ggplot(aes(x = reorder(Education, n), y = n)) +
+  geom_col(fill = "firebrick") +
+  geom_text(aes(label = n), hjust = -0.15) +
   coord_flip() +
+  expand_limits(y = 1250) +
   labs(x = "Escolaridade", y = "Número de clientes")
 
-# Em números
-clientes_raw |> count(Education, sort = TRUE)
+# Contando os clientes por estado civil
+estado_civil_contagem <- clientes_raw |>
+  count(Marital_Status)
 
-# Contagem de clientes por estado civil, do mais ao menos frequente
-clientes_raw |> count(Marital_Status, sort = TRUE)
+# Barras ordenadas pela frequência, com a contagem na ponta de cada barra
+estado_civil_contagem |>
+  ggplot(aes(x = reorder(Marital_Status, n), y = n)) +
+  geom_col(fill = "darkcyan") +
+  geom_text(aes(label = n), hjust = -0.15) +
+  coord_flip() +
+  expand_limits(y = 950) +
+  labs(x = "Estado civil", y = "Número de clientes")
 
 # 3. Preparação dos dados ----
 
@@ -220,6 +250,21 @@ dados_cluster <- clientes[vars_cluster] |>
 dim(dados_cluster)
 anyNA(dados_cluster)
 
+# Juntando, para cada gasto, os valores originais (clientes) e com log1p (dados_cluster)
+gastos_antes_depois <- bind_rows(
+  clientes |> select(starts_with("Mnt")) |> mutate(escala = "Original"),
+  dados_cluster |> select(starts_with("Mnt")) |> mutate(escala = "log1p")
+) |>
+  pivot_longer(-escala, names_to = "gasto", values_to = "valor") |>
+  mutate(escala = factor(escala, levels = c("Original", "log1p")))
+
+# Um histograma por gasto e escala (cada painel com seus próprios eixos)
+gastos_antes_depois |>
+  ggplot(aes(x = valor)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(gasto ~ escala, scales = "free", ncol = 4) +
+  labs(x = "Valor", y = "Número de clientes")
+
 # Desvio-padrão de cada variável, em ordem decrescente
 sapply(dados_cluster, sd) |>
   round(2) |>
@@ -259,6 +304,24 @@ apply(dados_pad, 2, sd)
 
 # Dimensão final da matriz que usaremos nas próximas seções
 dim(dados_pad)
+
+# Painel de cima: escreve a correlação do par, com tamanho proporcional à sua força
+painel_correlacao <- function(x, y, ...) {
+  r <- cor(x, y)
+  usr <- par("usr"); on.exit(par(usr = usr))
+  par(usr = c(0, 1, 0, 1))
+  text(0.5, 0.5, sprintf("%.2f", r), cex = 0.8 + 1.5 * abs(r),
+       col = if (r > 0) "steelblue" else "firebrick")
+}
+
+# Nomes longos quebrados em duas linhas, para caberem na diagonal (ex.: "MntSweet\nProducts")
+rotulos <- sub("(Purchases|Products|Prods|Month)$", "\n\\1", colnames(dados_pad))
+
+# pairs(): um gráfico de dispersão para cada par de colunas
+pairs(dados_pad, labels = rotulos,
+      lower.panel = function(x, y, ...) points(x, y, pch = ".", col = rgb(0, 0, 0, 0.3)),
+      upper.panel = painel_correlacao,
+      cex.labels = 0.9, gap = 0.3)
 
 # 4. Cluster hierárquico ----
 
@@ -329,6 +392,14 @@ plot(hc_ward, labels = FALSE, hang = -1,
      main = "Dendrograma (Ward)", xlab = "Clientes", sub = "",
      ylab = "Altura da fusão")
 
+# Os quatro dendrogramas da base real lado a lado (2 linhas x 2 colunas)
+par(mfrow = c(2, 2))
+plot(hc_single,   labels = FALSE, hang = -1, main = "single",   xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_complete, labels = FALSE, hang = -1, main = "complete", xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_average,  labels = FALSE, hang = -1, main = "average",  xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_ward,     labels = FALSE, hang = -1, main = "Ward",     xlab = "", sub = "", ylab = "Altura da fusão")
+par(mfrow = c(1, 1))
+
 # Alturas das 6 últimas fusões, da mais alta (a última, que junta tudo) para a mais baixa
 rev(tail(hc_ward$height, 6)) |> round(1)
 
@@ -394,13 +465,25 @@ mean(c(parcela_num, parcela_cat))
 # O valor calculado pela daisy() para o mesmo par (linha 1, coluna 3)
 as.matrix(dist_gower)[1, 3]
 
-# Hierárquico com a matriz de Gower: ligação média (average) e completa (complete)
-hc_gower_average  <- hclust(dist_gower, method = "average")
+# Hierárquico com a matriz de Gower e as quatro regras de ligação
+hc_gower_single   <- hclust(dist_gower, method = "single")
 hc_gower_complete <- hclust(dist_gower, method = "complete")
+hc_gower_average  <- hclust(dist_gower, method = "average")
+hc_gower_ward     <- hclust(dist_gower, method = "ward.D2")   # só para comparar (veja o texto)
+
+# Os quatro dendrogramas lado a lado
+par(mfrow = c(2, 2))
+plot(hc_gower_single,   labels = FALSE, hang = -1, main = "Gower + single",   xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_gower_complete, labels = FALSE, hang = -1, main = "Gower + complete", xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_gower_average,  labels = FALSE, hang = -1, main = "Gower + average",  xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_gower_ward,     labels = FALSE, hang = -1, main = "Gower + Ward (*)", xlab = "", sub = "", ylab = "Altura da fusão")
+par(mfrow = c(1, 1))
 
 # Tamanhos dos grupos quando cortamos cada árvore em 3 grupos
-table(cutree(hc_gower_average, k = 3))
+table(cutree(hc_gower_single, k = 3))
 table(cutree(hc_gower_complete, k = 3))
+table(cutree(hc_gower_average, k = 3))
+table(cutree(hc_gower_ward, k = 3))
 
 # Cortando a árvore da complete (Gower) em 2 grupos
 grupos_gower <- cutree(hc_gower_complete, k = 2)
@@ -413,6 +496,23 @@ tapply(clientes$Gasto_total, grupos_hc, mean) |> round()
 
 # Estado civil dentro de cada grupo da Gower
 table(gower = grupos_gower, estado_civil = clientes$Marital_Status)
+
+# Índice de Rand ajustado (ARI) a partir de dois vetores de grupos
+# (choose(m, 2) = número de pares que dá para formar com m clientes)
+rand_ajustado <- function(grupos_a, grupos_b) {
+  tab <- table(grupos_a, grupos_b)
+  pares_juntos   <- sum(choose(tab, 2))             # pares juntos nos dois agrupamentos
+  pares_linhas   <- sum(choose(rowSums(tab), 2))    # pares juntos no agrupamento A
+  pares_colunas  <- sum(choose(colSums(tab), 2))    # pares juntos no agrupamento B
+  esperado <- pares_linhas * pares_colunas / choose(sum(tab), 2)   # o que viria do acaso
+  (pares_juntos - esperado) / ((pares_linhas + pares_colunas) / 2 - esperado)
+}
+
+# Conferindo a função: um agrupamento comparado com ele mesmo dá 1
+rand_ajustado(grupos_hc, grupos_hc)
+
+# Concordância entre a Gower (complete, 2 grupos) e o Ward euclidiano (3 grupos)
+rand_ajustado(grupos_gower, grupos_hc) |> round(2)
 
 # Cortando a mesma árvore em 4 grupos: estado civil em cada grupo
 table(gower_4 = cutree(hc_gower_complete, k = 4), estado_civil = clientes$Marital_Status)
@@ -540,7 +640,7 @@ acoes <- c(
 fichas <- tibble(
   segmento = p$segmento,
   perfil = paste(resumos,
-                 sprintf("%s clientes (%s%% do gasto total); renda média de %s; gasto médio de %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.",
+                 sprintf("%s clientes (%s%% do gasto total); renda média de US$ %s; gasto médio de US$ %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.",
                          fmt(p$n), fmt(p$Receita_pct), fmt(p$Income_medio),
                          fmt(p$Gasto_total_medio), fmt(p$Compras_total_medio, 1),
                          fmt(p$Filhos_medio, 2), fmt(p$NumDealsPurchases_medio, 1),

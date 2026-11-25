@@ -57,9 +57,10 @@ clientes_raw |>
 clientes_raw |>
   ggplot(aes(x = Income)) +
   geom_histogram(bins = 40, fill = "steelblue", color = "white", na.rm = TRUE) +
-  labs(x = "Renda anual (unidades monetárias)", y = "Número de clientes")
+  labs(x = "Renda anual (US$)", y = "Número de clientes")
 
-# Gasto total = soma das seis colunas de valor gasto (as que começam com "Mnt")
+# Gasto total = soma das seis colunas de valor gasto (as que começam com "Mnt", de "Montante")
+# Obs.: MntGoldProds = produtos "ouro", ou seja, os itens de luxo (linha premium)
 gasto_total_tmp <- clientes_raw |>
   mutate(gasto_total = MntWines + MntFruits + MntMeatProducts +
            MntFishProducts + MntSweetProducts + MntGoldProds)
@@ -68,7 +69,7 @@ gasto_total_tmp <- clientes_raw |>
 gasto_total_tmp |>
   ggplot(aes(x = gasto_total)) +
   geom_histogram(bins = 40, fill = "darkorange", color = "white") +
-  labs(x = "Gasto total (unidades monetárias)", y = "Número de clientes")
+  labs(x = "Gasto total (US$)", y = "Número de clientes")
 
 # Comparando mediana e média do gasto total
 gasto_total_tmp |>
@@ -87,12 +88,13 @@ gasto_categoria |>
   ggplot(aes(x = reorder(categoria, gasto_medio), y = gasto_medio)) +
   geom_col(fill = "steelblue") +
   coord_flip() +                                        # barras na horizontal
-  labs(x = "Categoria", y = "Gasto médio por cliente (unidades monetárias)")
+  labs(x = "Categoria", y = "Gasto médio por cliente (US$)")
 
 # A mesma informação em números
 gasto_categoria |> arrange(desc(gasto_medio))
 
-# Média de compras em cada canal (NumDealsPurchases = compras feitas com desconto)
+# Média de compras em cada canal (NumDealsPurchases = compras feitas com desconto;
+# NumCatalogPurchases = pedidos à distância pelo catálogo, como nas revistas da Natura/Avon/Boticário)
 compras_canal <- clientes_raw |>
   select(NumStorePurchases, NumWebPurchases, NumCatalogPurchases, NumDealsPurchases) |>
   pivot_longer(everything(), names_to = "canal", values_to = "compras") |>
@@ -410,7 +412,7 @@ km$size
 
 # 6. K-medoides (PAM) ----
 
-# Gastos de 5 clientes: quatro parecidos e um outlier (5000)
+# Gastos de 5 clientes, em US$: quatro parecidos e um outlier (5000)
 gastos_exemplo <- c(100, 120, 130, 150, 5000)
 
 # Centroide: a média (puxada pelo outlier)
@@ -701,7 +703,7 @@ acoes <- c(
 fichas <- tibble(
   segmento = p$segmento,
   perfil = paste(resumos,
-                 sprintf("%s clientes (%s%% do gasto total); renda média de %s; gasto médio de %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.",
+                 sprintf("%s clientes (%s%% do gasto total); renda média de US$ %s; gasto médio de US$ %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.",
                          fmt(p$n), fmt(p$Receita_pct), fmt(p$Income_medio),
                          fmt(p$Gasto_total_medio), fmt(p$Compras_total_medio, 1),
                          fmt(p$Filhos_medio, 2), fmt(p$NumDealsPurchases_medio, 1),

@@ -38,6 +38,8 @@ A entrega final **não é um gráfico bonito**: é a ficha que o time de marketi
 
 Vamos usar a base *Customer Personality Analysis*, com **2.240 clientes** de uma empresa de varejo (compras de vinho, frutas, carnes, peixes, doces e ouro; canais de compra; resposta a campanhas). O arquivo `marketing_campaign.csv` já está na pasta da aula: **nada é baixado durante a aula**.
 
+A fonte não informa a moeda dos valores. **Vamos supor que os valores monetários (renda e gastos) estão em dólares (US$)**, para facilitar a leitura.
+
 ## Um mínimo de R para começar
 
 *(Pode pular se a turma já souber R.)* Estas ideias bastam para acompanhar a aula:
@@ -134,7 +136,7 @@ clientes_raw |>
   summary()
 ```
 
-Três coisas chamam atenção. A **renda máxima é 666.666**, muito acima do terceiro quartil (68.522) e da média (52.247): é suspeita. O `Income` tem **24 valores ausentes** (`NA`). E o **ano de nascimento mínimo é 1893**, o que daria um cliente com mais de 120 anos: os três menores valores são 1893, 1899 e 1900, idades implausíveis (o seguinte já é 1940), provavelmente erros de digitação. Vamos investigar a renda com um gráfico.
+Três coisas chamam atenção. A **renda máxima é US$ 666.666**, muito acima do terceiro quartil (US$ 68.522) e da média (US$ 52.247): é suspeita. O `Income` tem **24 valores ausentes** (`NA`). E o **ano de nascimento mínimo é 1893**, o que daria um cliente com mais de 120 anos: os três menores valores são 1893, 1899 e 1900, idades implausíveis (o seguinte já é 1940), provavelmente erros de digitação. Vamos investigar a renda com um gráfico.
 
 ## Renda: quem ganha o quê?
 
@@ -147,7 +149,7 @@ Três coisas chamam atenção. A **renda máxima é 666.666**, muito acima do te
 clientes_raw |>
   ggplot(aes(x = Income)) +
   geom_histogram(bins = 40, fill = "steelblue", color = "white", na.rm = TRUE) +
-  labs(x = "Renda anual (unidades monetárias)", y = "Número de clientes")
+  labs(x = "Renda anual (US$)", y = "Número de clientes")
 ```
 
 Quase todos os clientes estão entre 0 e 160 mil, mas o eixo vai até 666 mil por causa de **um único cliente** com renda 666.666. As rendas seguintes mais altas são 162.397, 160.803 e 157.733, ou seja, esse ponto está **muito isolado** (um *outlier*). Isso distorce médias e, mais adiante, distorceria as distâncias entre clientes. Trataremos disso na seção 3.
@@ -156,12 +158,17 @@ Quase todos os clientes estão entre 0 e 160 mil, mas o eixo vai até 666 mil po
 
 **Pergunta do marketing:** *os clientes gastam valores parecidos, ou existe um grupo que gasta muito mais que os outros?*
 
-Há seis colunas de gasto (vinhos, frutas, carnes, peixes, doces e ouro). Somamos as seis para obter o gasto total de cada cliente, apenas para este gráfico.
+Há seis colunas de gasto, todas começando com `Mnt`, de **"Montante"**: o montante gasto em compras de cada categoria nos últimos 2 anos (`MntWines` = vinhos, `MntFruits` = frutas, `MntMeatProducts` = carnes, `MntFishProducts` = peixes, `MntSweetProducts` = doces e `MntGoldProds` = produtos "ouro").
+
+Uma observação sobre `MntGoldProds`: os produtos "ouro" (*gold products*) são os itens **de luxo**, a linha *premium* da empresa. Eles medem um gasto discricionário de alto padrão, diferente dos produtos do dia a dia, como carnes, peixes, frutas, doces e vinhos.
+
+Somamos as seis para obter o gasto total de cada cliente, apenas para este gráfico.
 
 ```{r}
 #| fig-cap: "Distribuição do gasto total (soma das seis categorias)"
 
-# Gasto total = soma das seis colunas de valor gasto (as que começam com "Mnt")
+# Gasto total = soma das seis colunas de valor gasto (as que começam com "Mnt", de "Montante")
+# Obs.: MntGoldProds = produtos "ouro", ou seja, os itens de luxo (linha premium)
 gasto_total_tmp <- clientes_raw |>
   mutate(gasto_total = MntWines + MntFruits + MntMeatProducts +
            MntFishProducts + MntSweetProducts + MntGoldProds)
@@ -170,7 +177,7 @@ gasto_total_tmp <- clientes_raw |>
 gasto_total_tmp |>
   ggplot(aes(x = gasto_total)) +
   geom_histogram(bins = 40, fill = "darkorange", color = "white") +
-  labs(x = "Gasto total (unidades monetárias)", y = "Número de clientes")
+  labs(x = "Gasto total (US$)", y = "Número de clientes")
 
 # Comparando mediana e média do gasto total
 gasto_total_tmp |>
@@ -178,6 +185,31 @@ gasto_total_tmp |>
 ```
 
 A distribuição é **assimétrica à direita**: muitos clientes gastam pouco e poucos gastam muito. A **mediana é 396**, mas a **média é 605,8**; a média é puxada para cima pelos grandes gastadores. Variáveis assim têm uma "cauda longa" que domina as distâncias entre clientes. Por isso, na seção 3, vamos aplicar o **logaritmo** nos gastos antes de agrupar: ele "comprime" a cauda e deixa os clientes mais comparáveis.
+
+## Renda e gasto andam juntos?
+
+**Pergunta do marketing:** *quem ganha mais também gasta mais?*
+
+Um **gráfico de dispersão** coloca um ponto por cliente: a renda no eixo x e o gasto total no eixo y. Deixamos de fora, **só neste gráfico**, os clientes sem renda e o cliente de renda 666.666 (senão todos os outros ficariam espremidos à esquerda).
+
+```{r}
+#| fig-cap: "Renda anual vs. gasto total (um ponto por cliente)"
+
+# Só para o gráfico: sem renda ausente e sem a renda extrema
+renda_gasto_tmp <- gasto_total_tmp |>
+  filter(!is.na(Income), Income <= 200000)
+
+# Gráfico de dispersão: um ponto por cliente (alpha deixa os pontos semitransparentes)
+renda_gasto_tmp |>
+  ggplot(aes(x = Income, y = gasto_total)) +
+  geom_point(alpha = 0.3, color = "steelblue") +
+  labs(x = "Renda anual (US$)", y = "Gasto total em 2 anos (US$)")
+
+# Correlação entre renda e gasto (de -1 a 1; perto de 1 = sobem juntos)
+cor(renda_gasto_tmp$Income, renda_gasto_tmp$gasto_total)
+```
+
+Renda e gasto **sobem juntos** (correlação de **0,79**): quem ganha mais tende a gastar mais. Mas a relação não é uma linha reta perfeita: abaixo de uns US$ 40 mil por ano, quase ninguém gasta muito; acima disso, o gasto se espalha bastante, e há clientes de renda parecida com gastos muito diferentes. É por isso que vale olhar **várias variáveis ao mesmo tempo**, e não só a renda.
 
 ## Em que os clientes gastam?
 
@@ -196,45 +228,60 @@ gasto_categoria <- clientes_raw |>
   group_by(categoria) |>                                # um grupo por categoria
   summarise(gasto_medio = mean(gasto))                  # média por categoria
 
-# Gráfico de barras, ordenado do menor para o maior gasto médio
+# Gráfico de barras, ordenado do menor para o maior gasto médio,
+# com o valor escrito na ponta de cada barra (geom_text)
 gasto_categoria |>
   ggplot(aes(x = reorder(categoria, gasto_medio), y = gasto_medio)) +
   geom_col(fill = "steelblue") +
+  geom_text(aes(label = round(gasto_medio, 1)), hjust = -0.15) +
   coord_flip() +                                        # barras na horizontal
-  labs(x = "Categoria", y = "Gasto médio por cliente (unidades monetárias)")
-
-# A mesma informação em números
-gasto_categoria |> arrange(desc(gasto_medio))
+  expand_limits(y = 350) +                              # espaço para o número da maior barra
+  labs(x = "Categoria", y = "Gasto médio por cliente (US$)")
 ```
 
-**Vinhos** lideram com gasto médio de 303,9, cerca de metade do gasto médio total (605,8), seguidos por **carnes** (166,9). Frutas (26,3), doces (27,1), peixes (37,5) e produtos "ouro" (44,0) pesam bem menos. Vinho e carne são, portanto, as categorias que mais "movem" as diferenças entre clientes.
+**Vinhos** lideram com gasto médio de US$ 303,9, cerca de metade do gasto médio total (US$ 605,8), seguidos por **carnes** (US$ 166,9). Frutas (US$ 26,3), doces (US$ 27,1), peixes (US$ 37,5) e produtos "ouro" (US$ 44,0) pesam bem menos. Vinho e carne são, portanto, as categorias que mais "movem" as diferenças entre clientes.
 
 ## Por onde os clientes compram?
 
 **Pergunta do marketing:** *em quais canais (loja, site, catálogo) e com que uso de promoções os clientes compram?*
 
+Antes, o que significa cada canal: `NumStorePurchases` são as compras **na loja física**, `NumWebPurchases` as compras **pelo site** e `NumCatalogPurchases` as compras **pelo catálogo** (todas nos últimos 2 anos). Comprar pelo catálogo, comum na época em que a base foi criada (por volta de 2012-2014), funciona assim: a loja envia uma revista ou folheto (pelo correio ou por e-mail) com fotos, códigos e preços dos produtos; o cliente escolhe os itens pelo código e faz o pedido à distância (por telefone, formulário impresso ou pedido direto), sem ir à loja e sem navegar pelo site. No Brasil, o exemplo clássico são as revistas da **Natura**, da **Avon** ou do **Boticário**: você escolhe o produto no catálogo e encomenda com a consultora ou com a central.
+
 ```{r}
 #| fig-cap: "Número médio de compras por canal"
 
-# Média de compras em cada canal (NumDealsPurchases = compras feitas com desconto)
+# Média de compras em cada canal (NumDealsPurchases = compras feitas com desconto;
+# NumCatalogPurchases = pedidos à distância pelo catálogo, como nas revistas da Natura/Avon/Boticário)
 compras_canal <- clientes_raw |>
   select(NumStorePurchases, NumWebPurchases, NumCatalogPurchases, NumDealsPurchases) |>
   pivot_longer(everything(), names_to = "canal", values_to = "compras") |>
   group_by(canal) |>
   summarise(compras_medias = mean(compras))
 
-# Gráfico de barras com a média de compras por canal
+# Gráfico de barras com a média de compras por canal (e o valor na ponta da barra)
 compras_canal |>
   ggplot(aes(x = reorder(canal, compras_medias), y = compras_medias)) +
   geom_col(fill = "darkgreen") +
+  geom_text(aes(label = round(compras_medias, 2)), hjust = -0.15) +
   coord_flip() +
+  expand_limits(y = 6.5) +
   labs(x = "Canal", y = "Número médio de compras por cliente")
 
-# A mesma informação em números
-compras_canal |> arrange(desc(compras_medias))
+# Quantos clientes têm compras com desconto <= soma dos três canais? (veja o quadro abaixo)
+clientes_raw |>
+  count(desconto_cabe_nos_canais = NumDealsPurchases <=
+          NumWebPurchases + NumCatalogPurchases + NumStorePurchases)
 ```
 
 A **loja física** é o canal mais usado (5,79 compras por cliente em média), seguida pelo **site** (4,08) e pelo **catálogo** (2,66). As compras com desconto têm média de 2,33. Como a média esconde diferenças entre clientes, esperamos que **grupos diferentes** usem canais diferentes.
+
+::: {.callout-tip}
+## Para investigar: as compras com desconto são contadas duas vezes?
+
+`NumDealsPurchases` é um **canal** a mais, ou uma **parte** das compras dos outros três canais? Ou seja: uma compra com desconto feita na loja conta, ao mesmo tempo, em `NumStorePurchases` **e** em `NumDealsPurchases`? A fonte dos dados não diz. Há um indício de que sim: em **2.237 dos 2.240** clientes, as compras com desconto são **no máximo** a soma das compras no site, no catálogo e na loja, como seria de esperar se elas estivessem "dentro" desses canais.
+
+Se for isso, a mesma compra aparece em **duas variáveis**, que passam a carregar informação repetida (uma forma de **multicolinearidade**): o comportamento "comprar" pesaria duas vezes na distância entre os clientes. Na vida real, a pergunta certa é: **vá conferir com quem montou a base** como cada coluna foi calculada. Nesta aula, mantemos as quatro variáveis, mas fica o alerta.
+:::
 
 ## Perfil familiar e escolaridade
 
@@ -242,35 +289,44 @@ A **loja física** é o canal mais usado (5,79 compras por cliente em média), s
 
 `Kidhome` conta as crianças em casa e `Teenhome`, os adolescentes. Somando os dois, temos o total de filhos em casa.
 
+::: {.callout-note}
+## De onde vem o número de filhos?
+
+Na vida real, essa informação é **difícil de obter**. A loja vê o que o cliente compra, mas não sabe quantos filhos ele tem, a não ser que exista um **cadastro detalhado** em que o próprio cliente **informe** isso (por exemplo, num programa de fidelidade). Por isso, ela costuma ter lacunas e pode estar desatualizada (os filhos crescem e saem de casa, e o cadastro fica igual). Aqui temos a sorte de ter essa coluna completa.
+:::
+
+Nos gráficos de barras, primeiro **contamos** os clientes com `count()` e depois desenhamos as barras com essa contagem, escrevendo o número em cima de cada barra (`geom_text()`). Assim, o gráfico já mostra os números.
+
 ```{r}
 #| fig-cap: "Número de filhos em casa (crianças + adolescentes)"
 
-# Total de filhos em casa (crianças + adolescentes)
-filhos_tmp <- clientes_raw |>
-  mutate(filhos = Kidhome + Teenhome)
+# Contando os clientes por total de filhos em casa (crianças + adolescentes)
+filhos_contagem <- clientes_raw |>
+  count(filhos = Kidhome + Teenhome)
 
-# Gráfico de barras do número de filhos
-filhos_tmp |>
-  ggplot(aes(x = factor(filhos))) +
-  geom_bar(fill = "purple4") +
+# Gráfico de barras com a contagem escrita em cima de cada barra
+filhos_contagem |>
+  ggplot(aes(x = factor(filhos), y = n)) +
+  geom_col(fill = "purple4") +
+  geom_text(aes(label = n), vjust = -0.4) +
   labs(x = "Filhos em casa", y = "Número de clientes")
-
-# Em números
-filhos_tmp |> count(filhos)
 ```
 
 ```{r}
 #| fig-cap: "Escolaridade dos clientes"
 
-# Gráfico de barras do nível de escolaridade (Education), ordenado pela frequência
-clientes_raw |>
-  ggplot(aes(x = reorder(Education, Education, length))) +
-  geom_bar(fill = "firebrick") +
-  coord_flip() +
-  labs(x = "Escolaridade", y = "Número de clientes")
+# Contando os clientes por nível de escolaridade (Education)
+escolaridade_contagem <- clientes_raw |>
+  count(Education)
 
-# Em números
-clientes_raw |> count(Education, sort = TRUE)
+# Barras ordenadas pela frequência, com a contagem na ponta de cada barra
+escolaridade_contagem |>
+  ggplot(aes(x = reorder(Education, n), y = n)) +
+  geom_col(fill = "firebrick") +
+  geom_text(aes(label = n), hjust = -0.15) +
+  coord_flip() +
+  expand_limits(y = 1250) +
+  labs(x = "Escolaridade", y = "Número de clientes")
 ```
 
 A maioria das famílias tem **1 filho** em casa (1.128 clientes), enquanto 638 clientes não têm nenhum e só 53 têm 3. Quanto à escolaridade, `Graduation` é o nível mais comum (1.127 clientes, metade da base), seguido de `PhD` (486) e `Master` (370). Note que `2n Cycle` (203) e `Master` são provavelmente equivalentes, mas aparecem separados nos dados.
@@ -280,8 +336,20 @@ A maioria das famílias tem **1 filho** em casa (1.128 clientes), enquanto 638 c
 **Pergunta do marketing:** *como se distribui o estado civil dos clientes?*
 
 ```{r}
-# Contagem de clientes por estado civil, do mais ao menos frequente
-clientes_raw |> count(Marital_Status, sort = TRUE)
+#| fig-cap: "Estado civil dos clientes (como vem nos dados)"
+
+# Contando os clientes por estado civil
+estado_civil_contagem <- clientes_raw |>
+  count(Marital_Status)
+
+# Barras ordenadas pela frequência, com a contagem na ponta de cada barra
+estado_civil_contagem |>
+  ggplot(aes(x = reorder(Marital_Status, n), y = n)) +
+  geom_col(fill = "darkcyan") +
+  geom_text(aes(label = n), hjust = -0.15) +
+  coord_flip() +
+  expand_limits(y = 950) +
+  labs(x = "Estado civil", y = "Número de clientes")
 ```
 
 As categorias comuns são `Married` (864), `Together` (580), `Single` (480), `Divorced` (232) e `Widow` (77). Mas aparecem também **`Alone` (3), `Absurd` (2) e `YOLO` (2)**: rótulos que não são estados civis de verdade (`Alone` equivale a `Single`; `Absurd` e `YOLO` são lixo de digitação). São poucos casos, mas um bom exemplo de que **dados reais precisam de limpeza** antes de qualquer análise.
@@ -394,6 +462,12 @@ Ficam **de fora**:
 - **Totais** (`Gasto_total`, `Compras_total`): são somas de variáveis que estão na lista, e incluí-los contaria o mesmo comportamento duas vezes. Eles servirão para **descrever** os segmentos depois.
 - **`Tempo_casa_dias`**: mede há quanto tempo a pessoa é cliente, e não o seu jeito de comprar nem o seu perfil. Também fica só para **descrever** os segmentos depois.
 
+::: {.callout-important}
+## Essa lista é uma decisão, não uma regra
+
+Não existe uma lista "certa" de variáveis: escolher o que entra no agrupamento faz parte do **processo de decisão do(a) cientista de dados**, e essa escolha muda os grupos que vão aparecer. As justificativas acima são as **nossas**. Outra pessoa poderia, por exemplo, usar o **gasto total** no lugar dos seis gastos por categoria, deixar os gastos de fora para agrupar só pelo perfil e pelos canais, ou incluir o tempo de casa. O importante é **justificar** a escolha pela pergunta de negócio e **mostrar** o que ela produz.
+:::
+
 ```{r}
 # Variáveis que entram no agrupamento (somente comportamento e perfil)
 vars_cluster <- c("Income", "Idade", "Filhos", "Recency",
@@ -433,7 +507,7 @@ tibble(escala = c("Original", "Com log1p"),
        mediana = c(median(clientes$MntWines), median(log1p(clientes$MntWines))))
 ```
 
-No gráfico original, a maioria dos clientes se amontoa à esquerda, com uma cauda longa à direita: a **média (305,3) é bem maior que a mediana (175,5)**. Na escala logarítmica, os clientes se espalham de forma mais equilibrada. Ainda sobra uma barra isolada à esquerda: são os clientes com gasto zero. Faremos o mesmo nos seis gastos.
+No gráfico original, a maioria dos clientes se amontoa à esquerda, com uma cauda longa à direita: a **média (US$ 305,3) é bem maior que a mediana (US$ 175,5)**. Na escala logarítmica, os clientes se espalham de forma mais equilibrada. Ainda sobra uma barra isolada à esquerda: são os clientes com gasto zero. Faremos o mesmo nos seis gastos.
 
 Agora montamos `dados_cluster`: a tabela só com as variáveis escolhidas, com `log1p()` aplicado nas seis colunas `Mnt*`.
 
@@ -447,6 +521,30 @@ dim(dados_cluster)
 anyNA(dados_cluster)
 ```
 
+Como fizemos com os vinhos, vamos ver o "antes e depois" dos **seis gastos**. Cada linha da figura tem dois gastos; para cada um, o painel da esquerda é o original e o da direita, com `log1p`.
+
+```{r}
+#| fig-cap: "Os seis gastos antes (Original) e depois (log1p) da transformação"
+#| fig-height: 9
+
+# Juntando, para cada gasto, os valores originais (clientes) e com log1p (dados_cluster)
+gastos_antes_depois <- bind_rows(
+  clientes |> select(starts_with("Mnt")) |> mutate(escala = "Original"),
+  dados_cluster |> select(starts_with("Mnt")) |> mutate(escala = "log1p")
+) |>
+  pivot_longer(-escala, names_to = "gasto", values_to = "valor") |>
+  mutate(escala = factor(escala, levels = c("Original", "log1p")))
+
+# Um histograma por gasto e escala (cada painel com seus próprios eixos)
+gastos_antes_depois |>
+  ggplot(aes(x = valor)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(gasto ~ escala, scales = "free", ncol = 4) +
+  labs(x = "Valor", y = "Número de clientes")
+```
+
+Nos seis gastos, o original tem o mesmo formato dos vinhos: uma "parede" de clientes perto de zero e uma cauda longa à direita. Com o `log1p`, os clientes que gastam alguma coisa se espalham bem melhor. A barra isolada à esquerda são os clientes que **não gastaram nada** naquela categoria: em carnes, vinhos e produtos "ouro" eles são poucos, mas em **frutas, peixes e doces** são cerca de 400 clientes. O log não "inventa" diferenças entre eles: quem gastou zero continua empatado em zero.
+
 ## Por que padronizar? Um experimento
 
 As variáveis estão em **unidades muito diferentes**: `Income` está na casa das dezenas de milhares, e `Filhos` vai de 0 a 3. O clustering usa a **distância entre clientes** (o "Pitágoras" generalizado: somamos os quadrados das diferenças em cada variável e tiramos a raiz), então uma variável com números grandes pode "mandar sozinha" na distância. Primeiro, o desvio-padrão (o quanto cada variável varia) de cada uma:
@@ -458,7 +556,7 @@ sapply(dados_cluster, sd) |>
   sort(decreasing = TRUE)
 ```
 
-O desvio-padrão de `Income` (**21.527**) é mais de 700 vezes o da segunda variável que mais varia (`Recency`, 28,94). Vamos ver o efeito. Escolhemos um cliente (o primeiro da base) e procuramos os **3 clientes mais parecidos com ele**, de dois jeitos: com os dados **sem padronizar** e com os dados **padronizados** (`scale()`, que explicamos logo depois). A tabela mostra a distância de cada vizinho e `pct_income`, a **porcentagem da distância ao quadrado que vem só de `Income`**.
+O desvio-padrão de `Income` (**US$ 21.527**) é mais de 700 vezes o da segunda variável que mais varia (`Recency`, 28,94). Vamos ver o efeito. Escolhemos um cliente (o primeiro da base) e procuramos os **3 clientes mais parecidos com ele**, de dois jeitos: com os dados **sem padronizar** e com os dados **padronizados** (`scale()`, que explicamos logo depois). A tabela mostra a distância de cada vizinho e `pct_income`, a **porcentagem da distância ao quadrado que vem só de `Income`**.
 
 ```{r}
 # Padronizando: scale() subtrai a média e divide pelo desvio-padrão de cada coluna.
@@ -490,11 +588,25 @@ tres_vizinhos(as.matrix(dados_cluster))
 tres_vizinhos(dados_pad)
 ```
 
-**Sem padronizar**, os três "vizinhos mais próximos" têm renda quase idêntica à do cliente de referência (58.113, 58.116 e 58.086, contra 58.138), mas são **bem diferentes no resto**: o cliente 1 gastou 1.617 no total, e os vizinhos gastaram 758, 443 e 792. `Income` responde por **80,4%, 47,3% e 78,1%** da distância ao quadrado: uma única variável, entre 15, decide quase metade ou mais da distância. **Padronizando**, os vizinhos são outros (posições 2135, 38 e 879), com rendas entre 48.948 e 60.896, mas mais parecidos no conjunto das 15 variáveis (no gasto, por exemplo: todos gastam mais de 900 no total), embora a idade agora varie mais (71 anos nos dois últimos, contra 57 do cliente de referência; sem padronizar, eram 55, 58 e 45). `Income` cai para **0,3% a 3,4%** da distância: agora cada variável tem voz. Repare que os dois últimos vizinhos (IDs 2968 e 8800) têm exatamente os mesmos valores nas 15 variáveis (distância igual): provavelmente é um registro duplicado na base.
+**Sem padronizar**, os três "vizinhos mais próximos" têm renda quase idêntica à do cliente de referência (US$ 58.113, US$ 58.116 e US$ 58.086, contra US$ 58.138), mas são **bem diferentes no resto**: o cliente 1 gastou US$ 1.617 no total, e os vizinhos gastaram US$ 758, US$ 443 e US$ 792. `Income` responde por **80,4%, 47,3% e 78,1%** da distância ao quadrado: uma única variável, entre 15, decide quase metade ou mais da distância. **Padronizando**, os vizinhos são outros (posições 2135, 38 e 879), com rendas entre US$ 48.948 e US$ 60.896, mas mais parecidos no conjunto das 15 variáveis (no gasto, por exemplo: todos gastam mais de US$ 900 no total), embora a idade agora varie mais (71 anos nos dois últimos, contra 57 do cliente de referência; sem padronizar, eram 55, 58 e 45). `Income` cai para **0,3% a 3,4%** da distância: agora cada variável tem voz. Repare que os dois últimos vizinhos (IDs 2968 e 8800) têm exatamente os mesmos valores nas 15 variáveis (distância igual): provavelmente é um registro duplicado na base.
 
 ## Padronização (z-score)
 
-O que o `scale()` faz é o **z-score**: para cada valor, subtrai-se a média da coluna e divide-se pelo desvio-padrão. O resultado diz "**quantos desvios-padrão** este cliente está acima ou abaixo da média": 0 é um cliente na média, +1 é um desvio acima, −2 são dois abaixo. Como toda variável passa a ter média 0 e desvio-padrão 1, **todas valem igual** na distância.
+O que o `scale()` faz é o **z-score**: para cada valor, subtrai-se a média da coluna e divide-se pelo desvio-padrão. Para o valor $x_i$ do cliente $i$ numa variável com média $\bar{x}$ e desvio-padrão $s$:
+
+$$
+z_i = \frac{x_i - \bar{x}}{s}
+$$
+
+O resultado diz "**quantos desvios-padrão** este cliente está acima ou abaixo da média": 0 é um cliente na média, +1 é um desvio acima, −2 são dois abaixo. Como toda variável passa a ter média 0 e desvio-padrão 1, **todas valem igual** na distância.
+
+O z-score não é a única padronização. Outra muito usada é a **min-max**, que leva cada variável para o intervalo de 0 a 1 (0 = o menor valor da base, 1 = o maior):
+
+$$
+x_i' = \frac{x_i - \min(x)}{\max(x) - \min(x)}
+$$
+
+A min-max é fácil de ler, mas é sensível a valores extremos: um único cliente muito fora do padrão define o máximo e "espreme" todos os outros perto de zero (mais um motivo para o log nos gastos e para a limpeza da renda). Ela vai reaparecer na seção 5, dentro da distância de Gower. Nesta aula, usamos o z-score.
 
 ```{r}
 # Conferindo: toda coluna deve ter média 0 (arredondada) e desvio-padrão 1
@@ -506,6 +618,37 @@ dim(dados_pad)
 ```
 
 As 15 médias são 0 e os 15 desvios-padrão são 1, como esperado. A matriz `dados_pad` (**2.212 clientes × 15 variáveis**, já limpa, com log nos gastos e padronizada) é a base das próximas seções.
+
+## Uma última olhada: todas as variáveis contra todas
+
+Antes de agrupar, vale olhar as 15 variáveis padronizadas **duas a duas**. A **matriz de gráficos de dispersão** abaixo tem um gráfico para cada par: abaixo da diagonal, os pontos (um por cliente); acima, a **correlação** do par (o número fica maior quanto mais forte a relação). O nome de cada variável está na diagonal.
+
+```{r}
+#| fig-cap: "Matriz de dispersão das 15 variáveis padronizadas (abaixo da diagonal: pontos; acima: correlação)"
+#| fig-width: 14
+#| fig-height: 14
+#| column: screen-inset
+
+# Painel de cima: escreve a correlação do par, com tamanho proporcional à sua força
+painel_correlacao <- function(x, y, ...) {
+  r <- cor(x, y)
+  usr <- par("usr"); on.exit(par(usr = usr))
+  par(usr = c(0, 1, 0, 1))
+  text(0.5, 0.5, sprintf("%.2f", r), cex = 0.8 + 1.5 * abs(r),
+       col = if (r > 0) "steelblue" else "firebrick")
+}
+
+# Nomes longos quebrados em duas linhas, para caberem na diagonal (ex.: "MntSweet\nProducts")
+rotulos <- sub("(Purchases|Products|Prods|Month)$", "\n\\1", colnames(dados_pad))
+
+# pairs(): um gráfico de dispersão para cada par de colunas
+pairs(dados_pad, labels = rotulos,
+      lower.panel = function(x, y, ...) points(x, y, pch = ".", col = rgb(0, 0, 0, 0.3)),
+      upper.panel = painel_correlacao,
+      cex.labels = 0.9, gap = 0.3)
+```
+
+Os **gastos** (`Mnt*`), a **renda** e as compras no catálogo e na loja formam um "bloco" de correlações positivas fortes (azul, números grandes): é o comportamento "gasta muito" aparecendo em várias variáveis ao mesmo tempo. `Filhos` e `NumWebVisitsMonth` andam no sentido contrário (vermelho). Repare também que **nenhum par mostra "nuvens" separadas**: os pontos formam massas contínuas, sem grupos visíveis a olho nu. Os grupos, se existirem, estão nas 15 dimensões juntas, e é isso que o clustering vai procurar.
 
 # 4. Cluster hierárquico
 
@@ -583,6 +726,18 @@ Nos três primeiros passos, as quatro regras concordam: Ana e Bruno são os mais
 - **average** (ligação média): é a **média** de todas as distâncias entre os clientes dos dois grupos. Até o vermelho, a média é 4,1; até o azul, 3,6. Diego vai para o azul.
 - **Ward**: não compara distâncias entre pares de clientes. Mede o **espalhamento** de cada grupo (a soma das distâncias ao quadrado de cada cliente até o centro do grupo, o "cliente médio", marcado com ✕) e escolhe **a fusão que menos aumenta o espalhamento**. Juntar Diego ao vermelho aumenta o espalhamento em 12,4; ao azul, em 8,3. Diego vai para o azul. (O dendrograma do Ward usa uma escala diferente para as alturas, então esses números não aparecem nele como estão.)
 
+::: {.callout-note}
+## Average e Ward: quando eles discordam?
+
+No exemplo, average e Ward concordaram. Mas eles podem discordar, e a diferença está no **tamanho dos grupos**. A average olha só para a distância média entre os clientes dos dois grupos, não importa quantos sejam. Já o Ward mede quanto a fusão aumenta o espalhamento, e esse aumento, para juntar os grupos $A$ e $B$ (com $n_A$ e $n_B$ clientes e centros $\bar{c}_A$ e $\bar{c}_B$), é:
+
+$$
+\Delta(A, B) = \frac{n_A \cdot n_B}{n_A + n_B} \, \lVert \bar{c}_A - \bar{c}_B \rVert^2
+$$
+
+ou seja, a distância (ao quadrado) entre os centros, **multiplicada** pelo fator $\frac{n_A \cdot n_B}{n_A + n_B}$, que cresce com o tamanho dos grupos. Por isso, o Ward **"penaliza" a fusão de grupos grandes**. Se dois grupos grandes estiverem relativamente próximos, o Ward pode **adiar** a fusão deles e preferir unir dois grupos pequenos que estão um pouco mais distantes, porque isso aumenta menos o espalhamento total. A average, que não olha para o tamanho, juntaria primeiro os dois grupos grandes. É esse "freio" nos grupos grandes que faz o Ward produzir grupos de tamanhos mais equilibrados, como veremos na base real.
+:::
+
 A matriz de distâncias é a mesma; só muda a regra, e já no passo 4 a árvore é outra. Conferindo no R:
 
 ```{r}
@@ -624,7 +779,7 @@ table(cutree(hc_complete, k = 3))
 table(cutree(hc_average, k = 3))
 ```
 
-O resultado é decepcionante. Com a single, os grupos têm **2.208**, **3** e **1** cliente; com a complete, **2.199**, **9** e **4**; com a average, **2.205**, **4** e **3**. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam poucos clientes (de 4 a 13) muito diferentes dos demais. O motivo é que esta base **não tem grupos bem separados**: os clientes formam um contínuo, sem "vazios" entre eles (veremos isso no mapa da seção 6). A single sofre com o **encadeamento**: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando "grupos" quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis.
+**O resultado é decepcionante.** Com a single, os grupos têm **2.208**, **3** e **1** cliente; com a complete, **2.199**, **9** e **4**; com a average, **2.205**, **4** e **3**. Em vez de dividir a base, as três regras deixam quase todo mundo num grupo só e separam poucos clientes (de 4 a 13) muito diferentes dos demais. O motivo é que esta base **não tem grupos bem separados**: os clientes formam um contínuo, sem "vazios" entre eles (veremos isso no mapa da seção 6). A single sofre com o **encadeamento**: num contínuo, sempre há um vizinho próximo ligando um cliente ao seguinte, e tudo acaba num grupo só. A complete e a average não encadeiam, mas aqui os poucos clientes muito isolados ficam para as últimas fusões e acabam virando "grupos" quase vazios. Para o marketing, isso não serve: precisamos de uma regra que forme grupos compactos e de tamanhos úteis. Os dendrogramas dessas três regras na base real, que vamos desenhar ao lado do dendrograma do Ward logo adiante, deixam isso bem visível.
 
 ## A ligação de Ward
 
@@ -651,6 +806,23 @@ plot(hc_ward, labels = FALSE, hang = -1,
      main = "Dendrograma (Ward)", xlab = "Clientes", sub = "",
      ylab = "Altura da fusão")
 ```
+
+Compare com as outras três regras na **mesma base** (a mesma `dist_euc`):
+
+```{r}
+#| fig-cap: "Dendrogramas dos 2.212 clientes com as quatro regras de ligação"
+#| fig-height: 8
+
+# Os quatro dendrogramas da base real lado a lado (2 linhas x 2 colunas)
+par(mfrow = c(2, 2))
+plot(hc_single,   labels = FALSE, hang = -1, main = "single",   xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_complete, labels = FALSE, hang = -1, main = "complete", xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_average,  labels = FALSE, hang = -1, main = "average",  xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_ward,     labels = FALSE, hang = -1, main = "Ward",     xlab = "", sub = "", ylab = "Altura da fusão")
+par(mfrow = c(1, 1))
+```
+
+A diferença salta aos olhos. Na **single**, a árvore é uma "escada": os clientes vão sendo pendurados um a um no mesmo grupo (o **encadeamento**), e não há nenhum corte que separe grupos grandes. Na **complete** e na **average**, as últimas fusões só "penduram" uns poucos clientes isolados num tronco enorme. No **Ward**, as fusões do topo juntam **grandes ramos** de tamanhos parecidos, bem separados em altura: é a árvore que dá para cortar em grupos úteis.
 
 Para "ler" a árvore com números, olhamos as alturas das **últimas fusões** (as do topo). Se a altura cai muito de uma fusão para a seguinte, cortar a árvore entre elas separa grupos bem distintos.
 
@@ -699,6 +871,22 @@ A Gower calcula uma **dissimilaridade** (uma medida de "o quão diferentes" dois
 - **Variável numérica:** a diferença absoluta entre os dois clientes, dividida pela **amplitude** da variável (o maior valor menos o menor valor da base). Assim, cada parcela fica entre 0 e 1, qualquer que seja a unidade. Por isso **não precisamos do `scale()`**: a Gower já coloca as variáveis na mesma escala.
 - **Variável categórica:** 0 se os dois clientes estão na mesma categoria, 1 se estão em categorias diferentes.
 
+Em fórmula: com $p$ variáveis, a dissimilaridade de Gower entre os clientes $i$ e $j$ é a média das parcelas $d_{ijk}$ de cada variável $k$:
+
+$$
+d_G(i, j) = \frac{1}{p} \sum_{k=1}^{p} d_{ijk}
+$$
+
+em que, para uma **variável numérica**,
+
+$$
+d_{ijk} = \frac{|x_{ik} - x_{jk}|}{R_k}, \qquad R_k = \max(x_k) - \min(x_k)
+$$
+
+e, para uma **variável categórica**, $d_{ijk} = 0$ se $x_{ik} = x_{jk}$ e $d_{ijk} = 1$ caso contrário.
+
+Repare que a parcela numérica é exatamente a diferença entre os dois clientes depois da **padronização min-max** da seção 3: como $x_k' = \frac{x_k - \min(x_k)}{R_k}$, temos $|x_{ik}' - x_{jk}'| = \frac{|x_{ik} - x_{jk}|}{R_k}$. Ou seja, a Gower padroniza cada numérica com a min-max e mede a diferença absoluta. (A versão completa da fórmula, na [Wikipedia](https://en.wikipedia.org/wiki/Gower%27s_distance), também permite dar **pesos** diferentes às variáveis e lidar com valores ausentes; aqui, todos os pesos são iguais e não há ausentes.)
+
 Usamos as **mesmas 15 variáveis numéricas** da trilha principal, **com o `log1p()` nos gastos** (isto é, partimos de `dados_cluster`). O log importa aqui também: como a Gower divide pela amplitude, um único cliente com gasto enorme "esticaria" a amplitude, e as diferenças entre todos os outros clientes ficariam minúsculas. Às 15 numéricas, somamos `Education` e `Marital_Status` como **factor** (o tipo do R para variáveis categóricas). A função `daisy()` do pacote `cluster`, com `metric = "gower"`, calcula a matriz de dissimilaridades de uma só vez.
 
 ```{r}
@@ -726,6 +914,8 @@ summary(as.vector(dist_gower))
 A `daisy()` reconheceu os dados como **mistos** (`"mixed"`), e as dissimilaridades vão de **0** a **0,67**, com mediana **0,27**.
 
 ### Conferindo à mão, com 2 clientes
+
+A `daisy()` fez a conta para todos os pares de uma vez, como uma "caixa-preta". Aqui **não** fazemos nada novo: só vamos **refazer o passo a passo da fórmula à mão** para um par de clientes e **conferir** que dá o mesmo valor da função pronta do R. Assim fica claro o que está acontecendo por trás dela.
 
 Vamos refazer a conta para os clientes das linhas **1 e 3** da base. Eles têm a mesma escolaridade (`Graduation`), mas estado civil diferente: um é `Sozinho` e o outro, `Casado/Junto`.
 
@@ -760,21 +950,36 @@ as.matrix(dist_gower)[1, 3]
 
 As duas contas dão o mesmo valor, **0,1996** (cerca de 0,20): os dois clientes são bem parecidos. Repare nas parcelas: a de `Education` é **0** (mesma escolaridade) e a de `Marital_Status` é **1** (estado civil diferente). A maior parcela numérica é a de `NumStorePurchases` (**0,462**), menos da metade da parcela do estado civil. Uma única categórica diferente vale tanto quanto a **maior diferença possível** numa numérica (por exemplo, o cliente mais pobre contra o mais rico da base). Guarde essa observação: ela vai reaparecer quando olharmos a árvore da Gower mais de perto.
 
-## A árvore com a Gower: average e complete
+## A árvore com a Gower: as quatro regras
 
-Com a matriz de Gower, o cluster hierárquico funciona do mesmo jeito: ele só precisa das dissimilaridades entre os pares. Só trocamos a **régua**. Mas qual **regra de ligação** usar? O Ward foi pensado para a distância euclidiana (ele mede o espalhamento em volta do centro com médias e quadrados), e a Gower não é euclidiana. Então usamos as regras que só olham para as dissimilaridades entre pares de clientes, como a **average** e a **complete** da seção 4. (Existe uma adaptação do Ward para a Gower, mas ela fica fora desta aula.)
+Com a matriz de Gower, o cluster hierárquico funciona do mesmo jeito: ele só precisa das dissimilaridades entre os pares. Só trocamos a **régua**. Mas qual **regra de ligação** usar? O Ward foi pensado para a distância euclidiana (ele mede o espalhamento em volta do centro com médias e quadrados), e a Gower não é euclidiana. As regras que só olham para as dissimilaridades entre pares de clientes (**single**, **complete** e **average**) funcionam sem problema. Para comparar, rodamos também o Ward, mas com um **asterisco**: com a Gower, ele perde a interpretação de "espalhamento em volta do centro" e vira só uma regra a mais. (Existe uma adaptação do Ward para a Gower, mas ela fica fora desta aula.)
 
 ```{r}
-# Hierárquico com a matriz de Gower: ligação média (average) e completa (complete)
-hc_gower_average  <- hclust(dist_gower, method = "average")
+#| fig-cap: "Dendrogramas com a distância de Gower e as quatro regras de ligação"
+#| fig-height: 8
+
+# Hierárquico com a matriz de Gower e as quatro regras de ligação
+hc_gower_single   <- hclust(dist_gower, method = "single")
 hc_gower_complete <- hclust(dist_gower, method = "complete")
+hc_gower_average  <- hclust(dist_gower, method = "average")
+hc_gower_ward     <- hclust(dist_gower, method = "ward.D2")   # só para comparar (veja o texto)
+
+# Os quatro dendrogramas lado a lado
+par(mfrow = c(2, 2))
+plot(hc_gower_single,   labels = FALSE, hang = -1, main = "Gower + single",   xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_gower_complete, labels = FALSE, hang = -1, main = "Gower + complete", xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_gower_average,  labels = FALSE, hang = -1, main = "Gower + average",  xlab = "", sub = "", ylab = "Altura da fusão")
+plot(hc_gower_ward,     labels = FALSE, hang = -1, main = "Gower + Ward (*)", xlab = "", sub = "", ylab = "Altura da fusão")
+par(mfrow = c(1, 1))
 
 # Tamanhos dos grupos quando cortamos cada árvore em 3 grupos
-table(cutree(hc_gower_average, k = 3))
+table(cutree(hc_gower_single, k = 3))
 table(cutree(hc_gower_complete, k = 3))
+table(cutree(hc_gower_average, k = 3))
+table(cutree(hc_gower_ward, k = 3))
 ```
 
-A **average** repete o que vimos na base real com a distância euclidiana: o corte em 3 deixa **2.207 clientes num grupo só**, e os outros dois têm **4 clientes e 1 cliente**. A **complete** se sai melhor: divide a base em dois grandes grupos, de **1.357** e **851** clientes. O terceiro grupo tem só **4** clientes, então, para a complete, o corte que faz sentido é em **2 grupos**.
+A **single** e a **average** repetem o que vimos com a distância euclidiana: o corte em 3 deixa **2.207 clientes num grupo só**, e os outros dois têm **4 clientes e 1 cliente**. A **complete** se sai melhor: divide a base em dois grandes grupos, de **1.357** e **851** clientes. O terceiro grupo tem só **4** clientes, então, para a complete, o corte que faz sentido é em **2 grupos**. O **Ward** (com o asterisco) forma, como na seção 4, grupos grandes: **372**, **1.077** e **763** clientes. Os desenhos contam a mesma história da seção 4: a single é uma "escada", a average só pendura grupinhos no topo, e a complete e o Ward abrem a árvore em dois grandes ramos. Daqui em diante, seguimos com a **complete**, que é uma regra "legítima" para a Gower.
 
 ## A régua mudou. Os grupos mudaram?
 
@@ -799,6 +1004,42 @@ Pelo gasto médio, o grupo 1 do Ward é o de **maior gasto** (1.217), o grupo 2 
 - o grupo 1 da Gower tem **821 dos 825** clientes do grupo de maior gasto;
 - o grupo 2 da Gower tem **731 dos 838** clientes do grupo de menor gasto;
 - os clientes do grupo intermediário se dividem entre os dois (429 e 120).
+
+### Um número para a concordância: o índice de Rand ajustado
+
+Ler a tabela cruzada dá trabalho, e o resultado depende de quem lê. Uma medida que resume a concordância entre dois agrupamentos num número só é o **índice de Rand ajustado** (ARI, de *Adjusted Rand Index*). A ideia é olhar para **pares de clientes**: para cada par, os dois agrupamentos **concordam** se ambos colocam os dois clientes juntos, ou se ambos os separam. O índice de Rand é a proporção de pares em que há concordância; o ARI desconta a concordância que apareceria **por puro acaso**. Assim:
+
+- **ARI = 1**: os dois agrupamentos são idênticos (a menos dos rótulos dos grupos);
+- **ARI ≈ 0**: a concordância é a que se esperaria sorteando os grupos ao acaso;
+- valores no meio indicam concordância parcial. O ARI funciona mesmo quando os agrupamentos têm números de grupos diferentes (aqui, 2 e 3).
+
+Para os $n$ clientes, a partir da tabela cruzada com contagens $n_{ab}$ (totais de linha $n_{a\cdot}$ e de coluna $n_{\cdot b}$), e escrevendo $\binom{m}{2} = \frac{m(m-1)}{2}$ para o número de pares:
+
+$$
+\text{ARI} = \frac{\sum_{a,b} \binom{n_{ab}}{2} - E}{\frac{1}{2}\left[\sum_a \binom{n_{a\cdot}}{2} + \sum_b \binom{n_{\cdot b}}{2}\right] - E},
+\qquad E = \frac{\sum_a \binom{n_{a\cdot}}{2} \sum_b \binom{n_{\cdot b}}{2}}{\binom{n}{2}}
+$$
+
+```{r}
+# Índice de Rand ajustado (ARI) a partir de dois vetores de grupos
+# (choose(m, 2) = número de pares que dá para formar com m clientes)
+rand_ajustado <- function(grupos_a, grupos_b) {
+  tab <- table(grupos_a, grupos_b)
+  pares_juntos   <- sum(choose(tab, 2))             # pares juntos nos dois agrupamentos
+  pares_linhas   <- sum(choose(rowSums(tab), 2))    # pares juntos no agrupamento A
+  pares_colunas  <- sum(choose(colSums(tab), 2))    # pares juntos no agrupamento B
+  esperado <- pares_linhas * pares_colunas / choose(sum(tab), 2)   # o que viria do acaso
+  (pares_juntos - esperado) / ((pares_linhas + pares_colunas) / 2 - esperado)
+}
+
+# Conferindo a função: um agrupamento comparado com ele mesmo dá 1
+rand_ajustado(grupos_hc, grupos_hc)
+
+# Concordância entre a Gower (complete, 2 grupos) e o Ward euclidiano (3 grupos)
+rand_ajustado(grupos_gower, grupos_hc) |> round(2)
+```
+
+O ARI entre a Gower e o Ward euclidiano é **0,43**: uma concordância **moderada**, bem acima do acaso (0), mas longe de idêntica (1). Faz sentido com a tabela: os grupos de maior e de menor gasto são quase os mesmos nas duas réguas, mas o grupo intermediário do Ward é "repartido" pela Gower, que tem só 2 grupos.
 
 E o estado civil **não** decidiu essa divisão: a proporção de casados é parecida nos dois grupos da Gower (852 de 1.357, cerca de **63%**, contra 576 de 855, cerca de **67%**). Mesmo com as duas categóricas na régua, quem separa os clientes, no primeiro corte da árvore, continua sendo **quanto eles gastam**.
 
@@ -880,7 +1121,7 @@ Os três grupos aparecem **lado a lado ao longo do 1º componente**: o **Econôm
 
 ## Perfil de cada grupo e os nomes dos segmentos
 
-Agora descrevemos cada grupo nas **variáveis originais** (sem log e sem padronização), que o marketing entende: renda em unidades monetárias, número de filhos, gasto em 2 anos e assim por diante. Usamos médias, e para o gasto total também a mediana (lembre que o gasto tem cauda longa).
+Agora descrevemos cada grupo nas **variáveis originais** (sem log e sem padronização), que o marketing entende: renda em US$, número de filhos, gasto em 2 anos e assim por diante. Usamos médias, e para o gasto total também a mediana (lembre que o gasto tem cauda longa).
 
 **Os nomes.** Precisamos dar um nome a cada grupo, mas **não podemos amarrar o nome ao número do grupo** (do tipo "grupo 1 = Premium"): os números são rótulos arbitrários e podem mudar se alguém trocar a técnica, os dados ou a versão de um pacote. Se mudarem, a ficha passaria a descrever o grupo errado, sem nenhum aviso. Por isso, o nome é dado por uma **regra sobre o perfil**: ordenamos os grupos pelo **gasto total médio**, do menor para o maior, e damos os nomes nessa ordem.
 
@@ -930,9 +1171,13 @@ perfil_segmentos |>
 
 O que o perfil mostra (médias, salvo indicação):
 
-- **Econômico (838 clientes):** a menor renda (**32.413**) e um gasto muito baixo (**68** em 2 anos; mediana **54**), com só **5 compras**. Tem crianças pequenas em casa (`Kidhome` **0,82**) e visita **muito** o site (**6,5 visitas por mês**), mas compra pouco por lá (**1,8** compras). Responde por só **4%** do gasto total da base.
-- **Caçador de ofertas (549 clientes):** renda intermediária (**51.900**) e gasto de **514**. É o grupo que **mais compra com desconto** (**3,8** compras com desconto, mais que o dobro dos outros dois, ambos com 1,8) e compra bastante pelo site (**5,5**, empatado com o Premium). Tem **adolescentes** em casa (`Teenhome` **0,78**). Responde por **21%** do gasto.
-- **Premium (825 clientes):** a maior renda (**71.852**) e o maior gasto (**1.217**), puxado por **vinhos** (570) e **carnes** (373). **59%** não têm filhos em casa. Compra muito na loja (**8,6**) e pelo catálogo (**5,4**), usa pouco desconto (**1,8**) e entra pouco no site (**3,4** visitas por mês). Sozinho, responde por **75%** de todo o gasto da base.
+- **Econômico (838 clientes):** a menor renda (**US$ 32.413**) e um gasto muito baixo (**US$ 68** em 2 anos; mediana **US$ 54**), com só **5 compras**. Tem crianças pequenas em casa (`Kidhome` **0,82**) e visita **muito** o site (**6,5 visitas por mês**), mas compra pouco por lá (**1,8** compras). Responde por só **4%** do gasto total da base.
+- **Caçador de ofertas (549 clientes):** renda intermediária (**US$ 51.900**) e gasto de **US$ 514**. É o grupo que **mais compra com desconto** (**3,8** compras com desconto, mais que o dobro dos outros dois, ambos com 1,8) e compra bastante pelo site (**5,5**, empatado com o Premium). Tem **adolescentes** em casa (`Teenhome` **0,78**). Responde por **21%** do gasto.
+- **Premium (825 clientes):** a maior renda (**US$ 71.852**) e o maior gasto (**US$ 1.217**), puxado por **vinhos** (US$ 570) e **carnes** (US$ 373). **59%** não têm filhos em casa. Compra muito na loja (**8,6**) e pelo catálogo (**5,4**), usa pouco desconto (**1,8**) e entra pouco no site (**3,4** visitas por mês). Sozinho, responde por **75%** de todo o gasto da base.
+
+Em forma de desenho, com os números que justificam cada nome:
+
+![Os três segmentos e os números que justificam cada nome (médias de cada grupo)](figuras/personas_segmentos.svg){fig-alt="Três cartões ilustrados. Econômico: pessoa olhando o celular, de mão dada com uma criança pequena, ao lado de um cofrinho; gasto médio de US$ 68 em 2 anos, renda de US$ 32 mil, 6,5 visitas ao site por mês mas só 1,8 compras online, 0,82 criança pequena em casa. Caçador de ofertas: pessoa com uma lupa examinando uma etiqueta de -30%, ao lado de um adolescente com notebook; 3,8 compras com desconto, 5,5 compras pelo site, 0,78 adolescente em casa, gasto de US$ 514 e renda de US$ 52 mil. Premium: pessoa elegante com taça de vinho, sacolas de compras e um catálogo; gasto de US$ 1.217, US$ 570 em vinhos e US$ 373 em carnes, 8,6 compras na loja e 5,4 pelo catálogo, renda de US$ 72 mil e 59% sem filhos."}
 
 Repare que `Recency` (dias desde a última compra) é parecida nos três segmentos (entre **48** e **52** dias): os grupos não se separam por "quem comprou recentemente", e sim por **quanto e como** compram.
 
@@ -994,7 +1239,7 @@ acoes <- c(
 fichas <- tibble(
   segmento = p$segmento,
   perfil = paste(resumos,
-                 sprintf("%s clientes (%s%% do gasto total); renda média de %s; gasto médio de %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.",
+                 sprintf("%s clientes (%s%% do gasto total); renda média de US$ %s; gasto médio de US$ %s em 2 anos, em %s compras; %s filho(s) em casa; %s compras com desconto; %s visitas ao site por mês.",
                          fmt(p$n), fmt(p$Receita_pct), fmt(p$Income_medio),
                          fmt(p$Gasto_total_medio), fmt(p$Compras_total_medio, 1),
                          fmt(p$Filhos_medio, 2), fmt(p$NumDealsPurchases_medio, 1),
@@ -1032,9 +1277,9 @@ as.data.frame(clientes_exemplo)
 
 Para apresentar ao marketing:
 
-- **Econômico:** o cliente **5267**, com renda de 33.986, 1 filho, gasto de **44** em 2 anos e **7 visitas ao site por mês**, mas só 1 compra pela internet.
-- **Caçador de ofertas:** o cliente **10260**, com renda de 45.143, 1 filho, gasto de **311**, **12 compras**, 3 delas com desconto.
-- **Premium:** o cliente **10383**, com renda de 70.287, **sem filhos**, gasto de **1.093** e **20 compras**.
+- **Econômico:** o cliente **5267**, com renda de US$ 33.986, 1 filho, gasto de **US$ 44** em 2 anos e **7 visitas ao site por mês**, mas só 1 compra pela internet.
+- **Caçador de ofertas:** o cliente **10260**, com renda de US$ 45.143, 1 filho, gasto de **US$ 311**, **12 compras**, 3 delas com desconto.
+- **Premium:** o cliente **10383**, com renda de US$ 70.287, **sem filhos**, gasto de **US$ 1.093** e **20 compras**.
 
 ## Validação externa: os segmentos respondem diferente às campanhas?
 
@@ -1080,6 +1325,6 @@ Dois cuidados ao ler esse resultado. Primeiro, ele é **mais fraco do que parece
 
 - Partimos de um problema de negócio (campanhas iguais para todos) e chegamos a **3 segmentos com nome, perfil, cliente-exemplo e ação**.
 - Cada escolha mudou o resultado e foi **mostrada**: quais variáveis entram, log e padronização, a **regra de ligação** (single, complete e average não serviram para esta base; o Ward, sim), o *k* (a árvore sugeria 2 ou 3) e a **régua** (euclidiana ou Gower).
-- Com a Gower, a ligação complete reencontrou essencialmente **a mesma divisão por gasto** do Ward euclidiano: a estrutura principal não depende da régua. Mas as fronteiras são difusas (os clientes formam um contínuo): os segmentos são **tipos predominantes**, não caixas fechadas.
+- Com a Gower, a ligação complete reencontrou essencialmente **a mesma divisão por gasto** do Ward euclidiano (índice de Rand ajustado de **0,43**, uma concordância moderada): a estrutura principal não depende da régua. Mas as fronteiras são difusas (os clientes formam um contínuo): os segmentos são **tipos predominantes**, não caixas fechadas.
 - A validação com as campanhas, que **não** entraram no agrupamento, mostrou que os segmentos também diferem na aceitação das campanhas. É uma associação (e esperada, já que os segmentos se separam pelo gasto), não uma medida do efeito das campanhas.
 - Existem outras técnicas de agrupamento (como o k-means e o k-medoides), que dividem a base sem construir uma árvore; elas ficam para outra aula.
