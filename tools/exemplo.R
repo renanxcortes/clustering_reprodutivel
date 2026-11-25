@@ -1,6 +1,7 @@
 # Dados de exemplo usados nas figuras (tools/figuras.R) e conferidos pelos testes.
-# O exemplo de 6 clientes é digitado também no aula_clustering.qmd: se mudar aqui,
-# mude lá (o teste "exemplo do qmd é o mesmo das figuras" acusa a diferença).
+# O exemplo de 6 clientes é digitado também nas duas aulas (aula_clustering_simplificada.qmd
+# e versao_estendida/aula_clustering.qmd): se mudar aqui,
+# mude lá (os testes das duas aulas acusam a diferença).
 
 # Seis clientes com duas variáveis na mesma escala (0 a 10)
 exemplo_clientes <- function() {

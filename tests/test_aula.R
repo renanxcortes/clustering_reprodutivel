@@ -2,10 +2,10 @@
 #   Rscript -e 'testthat::test_file("tests/test_aula.R")'
 library(testthat)
 
-raiz <- normalizePath(if (file.exists("aula_clustering.qmd")) "." else "..")
+raiz <- normalizePath(if (file.exists("clustering.Rproj")) "." else "..")
 
 # Roda o script gerado num ambiente limpo e devolve esse ambiente
-rodar_script <- function(arquivo = "aula_clustering.R") {
+rodar_script <- function(arquivo = "versao_estendida/aula_clustering.R") {
   env <- new.env()
   withr::with_dir(raiz, {
     set.seed(NULL)
@@ -24,7 +24,7 @@ test_that("dados carregados", {
 })
 
 test_that("erro claro fora do projeto", {
-  script <- file.path(raiz, "aula_clustering.R")
+  script <- file.path(raiz, "versao_estendida", "aula_clustering.R")
   withr::with_dir(tempdir(), {
     expect_error(sys.source(script, envir = new.env()), "clustering.Rproj")
     expect_error(sys.source(script, envir = new.env()), "Set Working Directory")
@@ -33,17 +33,17 @@ test_that("erro claro fora do projeto", {
 
 test_that("script sincronizado com o qmd", {
   tmp <- tempfile(fileext = ".R")
-  withr::with_dir(raiz, knitr::purl("aula_clustering.qmd", tmp, documentation = 0, quiet = TRUE))
-  expect_identical(readLines(tmp), readLines(file.path(raiz, "aula_clustering.R")))
+  withr::with_dir(raiz, knitr::purl("versao_estendida/aula_clustering.qmd", tmp, documentation = 0, quiet = TRUE))
+  expect_identical(readLines(tmp), readLines(file.path(raiz, "versao_estendida", "aula_clustering.R")))
 })
 
 test_that("descritiva gera gráficos no HTML", {
-  html <- readLines(file.path(raiz, "aula_clustering.html"), warn = FALSE)
+  html <- readLines(file.path(raiz, "versao_estendida", "aula_clustering.html"), warn = FALSE)
   expect_gte(sum(lengths(regmatches(html, gregexpr("<img", html)))), 5)
 })
 
 test_that("figuras citadas no qmd existem", {
-  qmd <- paste(readLines(file.path(raiz, "aula_clustering.qmd"), encoding = "UTF-8"), collapse = "\n")
+  qmd <- paste(readLines(file.path(raiz, "versao_estendida", "aula_clustering.qmd"), encoding = "UTF-8"), collapse = "\n")
   figs <- unique(regmatches(qmd, gregexpr("figuras/[A-Za-z0-9_]+[.](png|gif)", qmd))[[1]])
   expect_true("figuras/kmeans_iteracoes.gif" %in% figs)
   expect_gte(length(figs), 5)
@@ -105,7 +105,7 @@ test_that("bônus de Gower", {
 })
 
 test_that("aula funciona pulando o bônus", {
-  linhas <- readLines(file.path(raiz, "aula_clustering.R"), encoding = "UTF-8")
+  linhas <- readLines(file.path(raiz, "versao_estendida", "aula_clustering.R"), encoding = "UTF-8")
   ini <- grep("^# 6b\\. ", linhas); fim <- grep("^# ---- fim do bônus 6b ----$", linhas)
   expect_length(ini, 1); expect_length(fim, 1)
   sem_bonus <- tempfile(fileext = ".R"); writeLines(linhas[-(ini:fim)], sem_bonus, useBytes = TRUE)
@@ -156,7 +156,7 @@ test_that("reprodutível", {
 test_that("script roda rápido", expect_lt(system.time(rodar_script())[["elapsed"]], 120))
 
 test_that("script tem as seções navegáveis", {
-  linhas <- readLines(file.path(raiz, "aula_clustering.R"), encoding = "UTF-8")
+  linhas <- readLines(file.path(raiz, "versao_estendida", "aula_clustering.R"), encoding = "UTF-8")
   expect_equal(sum(grepl("^# ([1-8]|6b)[.] .+ ----$", linhas)), 9L)
 })
 
@@ -166,7 +166,7 @@ test_that("README existe e cita a fonte dos dados", {
 })
 
 test_that("texto das ligações não ensina nada errado", {
-  qmd <- paste(readLines(file.path(raiz, "aula_clustering.qmd"), encoding = "UTF-8"), collapse = "\n")
+  qmd <- paste(readLines(file.path(raiz, "versao_estendida", "aula_clustering.qmd"), encoding = "UTF-8"), collapse = "\n")
   # Ward minimiza o AUMENTO do espalhamento, não o espalhamento do grupo resultante
   expect_false(grepl("menos espalhado", qmd))
   expect_gte(lengths(regmatches(qmd, gregexpr("menos aumenta", qmd))), 2)
@@ -174,4 +174,11 @@ test_that("texto das ligações não ensina nada errado", {
   expect_false(grepl("a mesma fusão aparece", qmd))
   # a complete separa 13 clientes, não "meia dúzia"
   expect_false(grepl("meia dúzia", qmd))
+})
+
+test_that("versão estendida fica em versao_estendida/ e o HTML embute as figuras", {
+  expect_false(file.exists(file.path(raiz, "aula_clustering.qmd")))
+  expect_false(file.exists(file.path(raiz, "aula_clustering.R")))
+  html <- paste(readLines(file.path(raiz, "versao_estendida", "aula_clustering.html"), warn = FALSE), collapse = "")
+  expect_true(grepl("data:image/gif", html, fixed = TRUE))   # o GIF do k-means foi encontrado e embutido
 })

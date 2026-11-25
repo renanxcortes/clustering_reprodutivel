@@ -13,6 +13,9 @@ format:
 execute:
   warning: false
   message: false
+knitr:
+  opts_knit:
+    root.dir: ".."   # o código roda a partir da raiz do projeto (onde estão os dados)
 ---
 
 # 1. Problema de negócio e setup
@@ -54,7 +57,8 @@ Vamos usar a base *Customer Personality Analysis*, com **2.240 clientes** de uma
 # AULA: Quem são os nossos clientes? (MAT02053 - UFRGS)
 # Somos a equipe de dados de uma rede de varejo e vamos segmentar os clientes
 # para personalizar as campanhas. Rode o script bloco a bloco (Ctrl + Enter).
-# Este arquivo é gerado a partir de aula_clustering.qmd (veja o HTML com as explicações).
+# Este arquivo é gerado a partir de versao_estendida/aula_clustering.qmd (veja o HTML com as explicações).
+# Abra o projeto clustering.Rproj (na pasta de cima) antes de rodar: os dados ficam lá.
 
 # Criando um objeto chamado "gastos" com quatro valores
 gastos <- c(100, 250, 300, 150)
@@ -517,11 +521,11 @@ A **distância euclidiana** é a régua que já usamos na seção 3: para dois c
 
 Para enxergar a ideia, começamos com um exemplo de brinquedo: **6 clientes** com só **2 variáveis** (renda e gasto, numa escala de 0 a 10), para que caibam num gráfico. Com 2 variáveis, a distância entre dois clientes é o comprimento da linha reta que os liga:
 
-![A distância entre Ana e Diego é a hipotenusa de um triângulo retângulo: 4 de diferença na renda e 3 no gasto dão distância 5.](figuras/distancia_dois_clientes.png)
+![A distância entre Ana e Diego é a hipotenusa de um triângulo retângulo: 4 de diferença na renda e 3 no gasto dão distância 5.](../figuras/distancia_dois_clientes.png)
 
 Fazendo essa conta para **todos os pares** (com 6 clientes, são 15 pares), montamos a **matriz de distâncias**:
 
-![Os 6 clientes e a matriz de distâncias entre eles](figuras/matriz_distancias.png)
+![Os 6 clientes e a matriz de distâncias entre eles](../figuras/matriz_distancias.png)
 
 Vamos montar o mesmo exemplo no R e pedir a matriz com `dist()`:
 
@@ -572,11 +576,11 @@ São **2.445.366 distâncias** (2.212 × 2.211 / 2 pares). Por isso o clustering
 
 O cluster **hierárquico aglomerativo** começa com **cada cliente sozinho no seu próprio grupo** e, a cada passo, **junta os dois grupos mais próximos**, até sobrar um grupo só com todo mundo. Enquanto cada grupo tem um cliente só, "os mais próximos" é fácil: é a menor distância da matriz. Mas quando um grupo já tem vários clientes, **qual é a distância entre dois grupos?** Há várias regras para responder, chamadas de **ligações**. Veja a construção da árvore com os 6 clientes:
 
-![Os passos do agrupamento hierárquico com os 6 clientes e os dendrogramas das quatro regras](figuras/ligacoes_passos.png)
+![Os passos do agrupamento hierárquico com os 6 clientes e os dendrogramas das quatro regras](../figuras/ligacoes_passos.png)
 
 Nos três primeiros passos, as quatro regras concordam: Ana e Bruno são os mais próximos (1,0), depois Elisa e Fábio (1,4), e Carla entra no grupo de Ana e Bruno. No passo 4, a pergunta é: **Diego, que está no meio do caminho, vai para qual grupo?** Aqui as regras discordam:
 
-![A regra de cada ligação para decidir o grupo de Diego](figuras/ligacoes_regra.png)
+![A regra de cada ligação para decidir o grupo de Diego](../figuras/ligacoes_regra.png)
 
 - **single** (ligação simples): a distância entre dois grupos é a **menor** distância entre um cliente de um grupo e um cliente do outro (os "vizinhos mais próximos"). Diego está a 3,2 de Carla e a 3,6 de Elisa e de Fábio, então vai para o grupo vermelho (Ana, Bruno e Carla).
 - **complete** (ligação completa): é a **maior** distância entre os clientes dos dois grupos. Até o grupo vermelho, a maior é 5,0 (até Ana); até o azul, 3,6. Diego vai para o azul (Elisa e Fábio).
@@ -699,7 +703,7 @@ O k-means não constrói uma árvore. Ele recebe o número de grupos *k* e procu
 
 A animação mostra o algoritmo em 45 clientes com 2 variáveis. Os ✕ são os centros: começam em 3 clientes sorteados (passo 1) e, a cada iteração, os clientes mudam de cor conforme o centro mais próximo (passo 2) e cada centro anda até a média do seu grupo (passo 3, a seta). Quando ninguém muda de cor, o algoritmo para.
 
-![O k-means passo a passo: atribuir cada cliente ao centro mais próximo e mover cada centro para a média do seu grupo, até ninguém mudar de grupo](figuras/kmeans_iteracoes.gif)
+![O k-means passo a passo: atribuir cada cliente ao centro mais próximo e mover cada centro para a média do seu grupo, até ninguém mudar de grupo](../figuras/kmeans_iteracoes.gif)
 
 Para medir se os grupos ficaram bons, usamos a **WSS** (*within sum of squares*, soma de quadrados dentro dos grupos): a soma das distâncias ao quadrado de cada cliente até o centroide do seu grupo. **Quanto menor a WSS, mais compactos os grupos.** O k-means tenta deixá-la a menor possível.
 

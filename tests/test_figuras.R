@@ -2,7 +2,7 @@
 #   Rscript -e 'testthat::test_file("tests/test_figuras.R")'
 library(testthat)
 
-raiz <- normalizePath(if (file.exists("aula_clustering.qmd")) "." else "..")
+raiz <- normalizePath(if (file.exists("clustering.Rproj")) "." else "..")
 source(file.path(raiz, "tools", "exemplo.R"))
 
 test_that("exemplo de 6 clientes tem as propriedades das figuras", {
