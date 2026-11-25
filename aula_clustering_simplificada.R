@@ -305,23 +305,66 @@ apply(dados_pad, 2, sd)
 # Dimensão final da matriz que usaremos nas próximas seções
 dim(dados_pad)
 
+# Funções auxiliares para as matrizes de dispersão das abas abaixo
+
 # Painel de cima: escreve a correlação do par, com tamanho proporcional à sua força
 painel_correlacao <- function(x, y, ...) {
   r <- cor(x, y)
   usr <- par("usr"); on.exit(par(usr = usr))
   par(usr = c(0, 1, 0, 1))
-  text(0.5, 0.5, sprintf("%.2f", r), cex = 0.8 + 1.5 * abs(r),
+  text(0.5, 0.5, sprintf("%.2f", r), cex = 1 + 2 * abs(r),
        col = if (r > 0) "steelblue" else "firebrick")
 }
 
-# Nomes longos quebrados em duas linhas, para caberem na diagonal (ex.: "MntSweet\nProducts")
-rotulos <- sub("(Purchases|Products|Prods|Month)$", "\n\\1", colnames(dados_pad))
+# Painel de baixo: um ponto semitransparente por cliente
+painel_pontos <- function(x, y, ...) {
+  points(x, y, pch = 16, cex = 0.4, col = rgb(0.27, 0.51, 0.71, 0.25))
+}
 
-# pairs(): um gráfico de dispersão para cada par de colunas
-pairs(dados_pad, labels = rotulos,
-      lower.panel = function(x, y, ...) points(x, y, pch = ".", col = rgb(0, 0, 0, 0.3)),
-      upper.panel = painel_correlacao,
-      cex.labels = 0.9, gap = 0.3)
+# Matriz de dispersão de um bloco de colunas de dados_pad
+# (nomes encurtados para caberem na diagonal, ex.: "MntSweetProducts" vira "MntSweet")
+matriz_dispersao <- function(colunas) {
+  rotulos <- sub("(Purchases|Products|Prods)$", "", colunas)
+  pairs(dados_pad[, colunas], labels = rotulos,
+        lower.panel = painel_pontos, upper.panel = painel_correlacao,
+        cex.labels = 1.1, gap = 0.4)
+}
+
+# Matriz de correlações em formato longo (uma linha por par de variáveis)
+correlacoes <- cor(dados_pad) |>
+  as.data.frame() |>
+  rownames_to_column("var1") |>
+  pivot_longer(-var1, names_to = "var2", values_to = "correlacao") |>
+  # mantém a ordem original das variáveis nos eixos
+  mutate(var1 = factor(var1, levels = colnames(dados_pad)),
+         var2 = factor(var2, levels = rev(colnames(dados_pad))))
+
+# Mapa de calor das correlações, com o valor escrito em cada casa
+correlacoes |>
+  ggplot(aes(x = var1, y = var2, fill = correlacao)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(correlacao, 1)), size = 3) +
+  scale_fill_gradient2(low = "firebrick", mid = "white", high = "steelblue",
+                       midpoint = 0, limits = c(-1, 1)) +
+  labs(x = NULL, y = NULL, fill = "Correlação") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+matriz_dispersao(c("Income", "Idade", "Filhos", "Recency"))
+
+matriz_dispersao(c("MntWines", "MntFruits", "MntMeatProducts",
+                   "MntFishProducts", "MntSweetProducts", "MntGoldProds"))
+
+matriz_dispersao(c("NumDealsPurchases", "NumWebPurchases", "NumCatalogPurchases",
+                   "NumStorePurchases", "NumWebVisitsMonth"))
+
+# Renda no eixo x; cada painel tem outra variável no eixo y
+as_tibble(dados_pad) |>
+  pivot_longer(-Income, names_to = "variavel", values_to = "valor") |>
+  mutate(variavel = factor(variavel, levels = colnames(dados_pad)[-1])) |>
+  ggplot(aes(x = Income, y = valor)) +
+  geom_point(alpha = 0.2, size = 0.7, color = "steelblue") +
+  facet_wrap(~ variavel, ncol = 4) +
+  labs(x = "Renda (padronizada)", y = "Valor padronizado")
 
 # 4. Cluster hierárquico ----
 
