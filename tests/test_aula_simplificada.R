@@ -115,9 +115,11 @@ test_that("simplificada: figuras citadas existem", {
   for (f in figs) expect_true(file.exists(file.path(raiz, f)), info = f)
 })
 
-test_that("README cita a versão simplificada", {
+test_that("README apresenta a simplificada como principal e a estendida na pasta própria", {
   rd <- paste(readLines(file.path(raiz, "README.md"), encoding = "UTF-8"), collapse = "\n")
-  expect_match(rd, "## Versão simplificada")
+  expect_match(rd, "## Versão estendida")
+  expect_match(rd, "versao_estendida/aula_clustering")
+  expect_match(rd, "Abra `aula_clustering_simplificada.R`")
   expect_match(rd, "aula_clustering_simplificada")
   expect_match(rd, "test_aula_simplificada")
 })
