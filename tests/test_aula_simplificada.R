@@ -121,3 +121,26 @@ test_that("README cita a versão simplificada", {
   expect_match(rd, "aula_clustering_simplificada")
   expect_match(rd, "test_aula_simplificada")
 })
+
+test_that("simplificada: cabeçalho do script aponta para a própria aula", {
+  l <- readLines(file.path(raiz, "aula_clustering_simplificada.R"), encoding = "UTF-8")
+  expect_true(any(grepl("gerado a partir de aula_clustering_simplificada[.]qmd", l)))
+  expect_false(any(grepl("gerado a partir de aula_clustering[.]qmd", l)))
+})
+
+test_that("simplificada: preparação e hierárquico como no texto", {
+  source(file.path(raiz, "tools", "exemplo.R"), local = TRUE)
+  expect_equal(as.data.frame(env_s$exemplo), as.data.frame(exemplo_clientes()))
+  expect_equal(env_s$k_escolhido, 3L)
+  expect_equal(sort(as.vector(table(env_s$grupos_hc))), c(549L, 825L, 838L))
+  n <- nrow(env_s$clientes)
+  for (h in list(env_s$hc_single, env_s$hc_complete, env_s$hc_average))
+    expect_gt(max(table(cutree(h, k = 3))) / n, 0.99)
+  expect_equal(round(rev(tail(env_s$hc_ward$height, 2)), 1), c(147.4, 82.5))
+})
+
+test_that("simplificada: peso da categórica descrito como parcela", {
+  txt <- paste(readLines(file.path(raiz, "aula_clustering_simplificada.qmd"), encoding = "UTF-8"), collapse = "\n")
+  expect_false(grepl("diferente vale 1 inteiro", txt))
+  expect_false(grepl("[Cc]entroide", txt))
+})

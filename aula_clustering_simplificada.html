@@ -2329,7 +2329,7 @@ vertical-align: -.125em;
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># AULA: Quem são os nossos clientes? (MAT02053 - UFRGS)</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Somos a equipe de dados de uma rede de varejo e vamos segmentar os clientes</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># para personalizar as campanhas. Rode o script bloco a bloco (Ctrl + Enter).</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Este arquivo é gerado a partir de aula_clustering.qmd (veja o HTML com as explicações).</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Este arquivo é gerado a partir de aula_clustering_simplificada.qmd (veja o HTML com as explicações).</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Criando um objeto chamado &quot;gastos&quot; com quatro valores</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>gastos <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">250</span>, <span class="dv">300</span>, <span class="dv">150</span>)</span>
@@ -3428,7 +3428,7 @@ gower Casado/Junto Sozinho
 <li>os clientes do grupo intermediário se dividem entre os dois (429 e 120).</li>
 </ul>
 <p>E o estado civil <strong>não</strong> decidiu essa divisão: a proporção de casados é parecida nos dois grupos da Gower (852 de 1.357, cerca de <strong>63%</strong>, contra 576 de 855, cerca de <strong>67%</strong>). Mesmo com as duas categóricas na régua, quem separa os clientes, no primeiro corte da árvore, continua sendo <strong>quanto eles gastam</strong>.</p>
-<p>E o estado civil? Ele <strong>pesa</strong> na Gower (lembre da conta à mão: um estado civil diferente vale 1 inteiro), mas só aparece mais embaixo na árvore. Cortando em <strong>4 grupos</strong>:</p>
+<p>E o estado civil? Ele <strong>pesa</strong> na Gower (lembre da conta à mão: a parcela de um estado civil diferente é 1 inteiro, o máximo possível), mas só aparece mais embaixo na árvore. Cortando em <strong>4 grupos</strong>:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cortando a mesma árvore em 4 grupos: estado civil em cada grupo</span></span>
 <span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(<span class="at">gower_4 =</span> <span class="fu">cutree</span>(hc_gower_complete, <span class="at">k =</span> <span class="dv">4</span>), <span class="at">estado_civil =</span> clientes<span class="sc">$</span>Marital_Status)</span></code></pre></div><button title="Copiar para a área de transferência" class="code-copy-button"><i class="bi"></i></button></div>
@@ -3441,7 +3441,7 @@ gower_4 Casado/Junto Sozinho
       4            4       0</code></pre>
 </div>
 </div>
-<p>No corte em 4 aparece um grupo de <strong>187 clientes, todos “Sozinho”</strong>. É o efeito da conta à mão: como uma categórica diferente vale 1 inteiro na média, o estado civil acaba criando uma “fronteira” própria, mas só nos cortes mais baixos da árvore, depois que a divisão principal (pelo gasto) já foi feita.</p>
+<p>No corte em 4 aparece um grupo de <strong>187 clientes, todos “Sozinho”</strong>. É o efeito da conta à mão: como a parcela de uma categórica diferente é sempre 1 inteiro (enquanto as parcelas das numéricas costumam ser frações pequenas), o estado civil acaba criando uma “fronteira” própria, mas só nos cortes mais baixos da árvore, depois que a divisão principal (pelo gasto) já foi feita.</p>
 <p><strong>Conclusão:</strong> a régua mudou, mas a <strong>estrutura principal se manteve</strong>: com ou sem as categóricas, os clientes se separam primeiro pelo gasto. Isso nos dá mais confiança nos grupos da seção 4. Para entregar ao marketing, seguimos com os <strong>3 grupos do Ward euclidiano</strong>: eles usam só as variáveis de comportamento de compra e dividem a base em 3 grupos de tamanhos úteis. Incluir variáveis (como o estado civil) é sempre uma <strong>escolha</strong>, e o analista precisa olhar o resultado e perguntar se os grupos respondem à pergunta do negócio.</p>
 </section>
 </section>

@@ -3,7 +3,7 @@
 # AULA: Quem são os nossos clientes? (MAT02053 - UFRGS)
 # Somos a equipe de dados de uma rede de varejo e vamos segmentar os clientes
 # para personalizar as campanhas. Rode o script bloco a bloco (Ctrl + Enter).
-# Este arquivo é gerado a partir de aula_clustering.qmd (veja o HTML com as explicações).
+# Este arquivo é gerado a partir de aula_clustering_simplificada.qmd (veja o HTML com as explicações).
 
 # Criando um objeto chamado "gastos" com quatro valores
 gastos <- c(100, 250, 300, 150)

@@ -54,7 +54,7 @@ Vamos usar a base *Customer Personality Analysis*, com **2.240 clientes** de uma
 # AULA: Quem são os nossos clientes? (MAT02053 - UFRGS)
 # Somos a equipe de dados de uma rede de varejo e vamos segmentar os clientes
 # para personalizar as campanhas. Rode o script bloco a bloco (Ctrl + Enter).
-# Este arquivo é gerado a partir de aula_clustering.qmd (veja o HTML com as explicações).
+# Este arquivo é gerado a partir de aula_clustering_simplificada.qmd (veja o HTML com as explicações).
 
 # Criando um objeto chamado "gastos" com quatro valores
 gastos <- c(100, 250, 300, 150)
@@ -802,14 +802,14 @@ Pelo gasto médio, o grupo 1 do Ward é o de **maior gasto** (1.217), o grupo 2 
 
 E o estado civil **não** decidiu essa divisão: a proporção de casados é parecida nos dois grupos da Gower (852 de 1.357, cerca de **63%**, contra 576 de 855, cerca de **67%**). Mesmo com as duas categóricas na régua, quem separa os clientes, no primeiro corte da árvore, continua sendo **quanto eles gastam**.
 
-E o estado civil? Ele **pesa** na Gower (lembre da conta à mão: um estado civil diferente vale 1 inteiro), mas só aparece mais embaixo na árvore. Cortando em **4 grupos**:
+E o estado civil? Ele **pesa** na Gower (lembre da conta à mão: a parcela de um estado civil diferente é 1 inteiro, o máximo possível), mas só aparece mais embaixo na árvore. Cortando em **4 grupos**:
 
 ```{r}
 # Cortando a mesma árvore em 4 grupos: estado civil em cada grupo
 table(gower_4 = cutree(hc_gower_complete, k = 4), estado_civil = clientes$Marital_Status)
 ```
 
-No corte em 4 aparece um grupo de **187 clientes, todos "Sozinho"**. É o efeito da conta à mão: como uma categórica diferente vale 1 inteiro na média, o estado civil acaba criando uma "fronteira" própria, mas só nos cortes mais baixos da árvore, depois que a divisão principal (pelo gasto) já foi feita.
+No corte em 4 aparece um grupo de **187 clientes, todos "Sozinho"**. É o efeito da conta à mão: como a parcela de uma categórica diferente é sempre 1 inteiro (enquanto as parcelas das numéricas costumam ser frações pequenas), o estado civil acaba criando uma "fronteira" própria, mas só nos cortes mais baixos da árvore, depois que a divisão principal (pelo gasto) já foi feita.
 
 **Conclusão:** a régua mudou, mas a **estrutura principal se manteve**: com ou sem as categóricas, os clientes se separam primeiro pelo gasto. Isso nos dá mais confiança nos grupos da seção 4. Para entregar ao marketing, seguimos com os **3 grupos do Ward euclidiano**: eles usam só as variáveis de comportamento de compra e dividem a base em 3 grupos de tamanhos úteis. Incluir variáveis (como o estado civil) é sempre uma **escolha**, e o analista precisa olhar o resultado e perguntar se os grupos respondem à pergunta do negócio.
 
